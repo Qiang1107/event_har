@@ -1,0 +1,8 @@
+data/
+results/
+utils/origin_data/
+utils/train_data/
+pretrained/
+preprocessing_data/
+**/__pycache__
+*.log

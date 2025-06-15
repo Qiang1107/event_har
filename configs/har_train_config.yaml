@@ -1,0 +1,129 @@
+# configs/your_action_config.yaml
+
+
+# ===== 数据集设置 =====
+dataset:
+  train_dir: data/train
+  val_dir:   data/val
+  test_dir:  data/test
+
+  label_map:
+    Align_screwdriver:     0
+    Approach:              1
+    Idle:                  2
+    No_human:              3
+    Pick_bolt:             4
+    Pick_cover:            5
+    Pick_screwdriver:      6
+    Place_bolt:            7
+    Place_cover:           8
+    Put_down_screwdriver:  9
+    Screw:                10
+    Transition:           11
+
+  window_size: 9          # 定长帧数
+  stride:      3          # 滑动步长
+  enable_transform: true  # 是否启用数据变换
+  
+  window_size_us: 333333  # 单位微秒us, (333333/1000000)* 30fps = 10帧
+  stride_us:      66666   # 单位微秒us, (66666/1000000)* 30fps = 2帧
+  max_points:  8192       # 点云最大点数 4096
+  time_dimension: true    # 是否使用时间维度
+  enable_augment: false   # 是否启用数据增强
+  # 如果为true，则输入维度为4（x, y, z, t），否则为3（x, y, z）
+
+
+# ===== DataLoader 参数 =====
+train:
+  # ---------------------------------------
+  # 32 for vit, 16 for cnn, 
+  batch_size:   8  
+  # ---------------------------------------
+  num_workers:  0     # 子进程加载训练数据
+  shuffle:      true
+
+val:
+  # ---------------------------------------
+  batch_size:   8
+  # ---------------------------------------
+  num_workers:  0     
+  shuffle:      false
+
+test:
+  batch_size:   4
+  num_workers:  0    
+  shuffle:      false
+
+
+# ===== ViT模型配置 =====
+vit_model:
+  backbone:
+    # ---------------------------------------
+    img_size:    [576, 768] # [192, 256]
+    patch_size:  [192, 256]
+    # 4 for rgbe and rgbd, 3 for rgb, 1 for event
+    in_chans:   1
+    # ---------------------------------------
+    num_classes: 8 # 12
+    embed_dim:   384 # 768
+    depth:      6 # 12
+    num_heads:  6 # 12
+    mlp_ratio:  3.0 # 4.
+    qkv_bias:   true
+    qk_scale:   null
+    drop_rate:  0.2
+    attn_drop_rate: 0.2
+    drop_path_rate: 0.5
+    hybrid_backbone: null
+    norm_layer:  null
+    use_checkpoint: false
+    frozen_stages: -1
+    ratio:       1
+    last_norm:  true
+    patch_padding: pad
+    freeze_attn: false
+    freeze_ffn:  false
+
+  neck:
+    input_dim:  384 # 768
+    hidden_dim: 192 # 256
+    mode: mean           # 可选：lstm / mean / none
+
+  head:
+    input_dim:    192  # 与 neck 输出一致
+    num_classes:  12
+    dropout_prob: 0.5
+
+
+# ===== cnn模型配置 =====
+cnn_model:
+  # ---------------------------------------
+  # 4 for rgbe and rgbd, 3 for rgb, 1 for event
+  input_dim:  1          # 输入通道数
+  output_dim: 12          # 输出类别数
+  input_height: 192          # 输入图像高度
+  input_width: 256           # 输入图像宽度
+  # ---------------------------------------
+
+
+# ===== pointnet2模型配置 =====
+pointnet2_model:
+  num_classes: 12
+  normal_channel: False  # 事件数据没有法向量
+  input_dim: 5  # 当time_dimension=True时
+  # input_dim: 4  # 如果time_dimension=False
+
+
+# ===== 优化器 & 训练 =====
+optimizer:
+  type:         AdamW # 可选：SGD / Adam / AdamW
+  lr:           2e-4 # 0.0001 
+  weight_decay: 5e-3 # 0.001 
+
+epochs:   10
+device:   cuda:0
+work_dir: results/checkpoints
+log_dir: results/logs
+# ---------------------------------------
+model_type: pointnet2  # options: cnn / vit / pointnet2
+# ---------------------------------------
