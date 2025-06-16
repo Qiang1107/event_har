@@ -1,8 +1,9 @@
 data/
 results/
-utils/origin_data/
-utils/train_data/
 pretrained/
 preprocessing_data/
+zyc/
 **/__pycache__
 *.log
+utils/origin_data/
+utils/train_data/

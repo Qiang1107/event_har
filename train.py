@@ -10,10 +10,12 @@ import pickle
 from torch.utils.data import DataLoader
 from datasets.rgbe_sequence_dataset import RGBESequenceDataset
 from datasets.event_sequence_dataset import ESequenceDataset
+from datasets.event_count_seq_dataset import ECountSeqDataset
 from models.model import VitModel
 from models.backbones.cnn import CNN_model
-from models.backbones.pointnet2 import PointNet2Classifier
-from models.losses.cross_entropy_loss import CrossEntropyLoss
+from models.backbones.pointnet2_simple import PointNet2ClassifierSimple
+# from models.backbones.pointnet2 import PointNet2Classifier
+# from models.losses.cross_entropy_loss import CrossEntropyLoss
 from utils.weight_utils import load_vitpose_pretrained
 
 
@@ -27,27 +29,18 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
     ds = cfg['dataset']
     if model_type == 'pointnet2':
         pnet2_data_dir = "preprocessing_data"
-        pnet2_train_path = os.path.join(pnet2_data_dir, "train_dataset.pkl")
+        pnet2_train_path = os.path.join(pnet2_data_dir, "train_dataset10_ecount.pkl")
         with open(pnet2_train_path, 'rb') as f:
             train_ds = pickle.load(f)
-        pnet2_val_path = os.path.join(pnet2_data_dir, "val_dataset.pkl")
+        pnet2_val_path = os.path.join(pnet2_data_dir, "val_dataset10_ecount.pkl")
         with open(pnet2_val_path, 'rb') as f:
             val_ds = pickle.load(f)
-        pnet2_test_path = os.path.join(pnet2_data_dir, "test_dataset.pkl")
+        pnet2_test_path = os.path.join(pnet2_data_dir, "test_dataset10_ecount.pkl")
         with open(pnet2_test_path, 'rb') as f:
             test_ds = pickle.load(f)       
-        train_loader = DataLoader(
-            train_ds,
-            **cfg['train']
-        )
-        val_loader = DataLoader(
-            val_ds,
-            **cfg['val']
-        )
-        test_loader = DataLoader(
-            test_ds,
-            **cfg['test']
-        )
+        train_loader = DataLoader(train_ds, **cfg['train'])
+        val_loader = DataLoader(val_ds, **cfg['val'])
+        test_loader = DataLoader(test_ds, **cfg['test'])
         
     else:
         train_ds = RGBESequenceDataset(
@@ -95,8 +88,9 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
             print(f"Loaded pretrained model from {pretrained_path}")
         loss_fn = nn.CrossEntropyLoss()
     elif model_type == 'pointnet2':
-        model = PointNet2Classifier(cfg).to(device)
-        loss_fn = nn.NLLLoss()
+        model = PointNet2ClassifierSimple(cfg).to(device)
+        # loss_fn = nn.NLLLoss()
+        loss_fn = nn.CrossEntropyLoss()
     elif model_type == 'cnn':
         model = CNN_model(cfg).to(device)
         loss_fn = nn.CrossEntropyLoss()
@@ -110,18 +104,13 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
         lr=float(optim_cfg['lr']),
         weight_decay=float(optim_cfg['weight_decay']),
     )
-    # optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-3)
-    # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg['epochs'])
+
     # —— 带预热的余弦退火学习率调度器 —— 
-    cosine_warmup_scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
-        optimizer, T_0=10, T_mult=2, eta_min=1e-6
-    )
-
-
+    cosine_warmup_scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=2, eta_min=1e-6)
+    # —— StepLR 学习率调度器 ——
+    step_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.5)
     # —— 余弦退火学习率调度器 —— 
-    cosine_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=cfg['epochs'], eta_min=1e-6
-    )
+    cosine_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg['epochs'], eta_min=1e-6)
     # —— 带预热的线性衰减调度器 —— 
     def warmup_linear_decay(epoch):
         warmup_epochs = 5
@@ -132,21 +121,18 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
     warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=warmup_linear_decay)
     # —— 多步衰减学习率调度器 —— 
     milestones = [int(cfg['epochs']*0.5), int(cfg['epochs']*0.75)]
-    step_scheduler = torch.optim.lr_scheduler.MultiStepLR(
-        optimizer, milestones=milestones, gamma=0.1
-    )
+    multistep_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=0.1)
     # —— 余弦退火带热重启 —— 
-    warm_restart_scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
-        optimizer, T_0=10, T_mult=2, eta_min=1e-6
-    )
+    warm_restart_scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=2, eta_min=1e-6)
     # —— One Cycle学习率调度器 —— 
     steps_per_epoch = len(train_loader)
     onecycle_scheduler = torch.optim.lr_scheduler.OneCycleLR(
         optimizer, max_lr=float(optim_cfg['lr'])*10, 
         steps_per_epoch=steps_per_epoch, epochs=cfg['epochs']
     )
+
     # 使用其中一个调度器 
-    scheduler = cosine_warmup_scheduler
+    # scheduler = step_scheduler
 
     # 4. 创建日志目录和文件
     if log_path is None:
@@ -161,6 +147,8 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
         f.write(f" Train batch size: {cfg['train']['batch_size']}\n")
         f.write(f" Validation batch size: {cfg['val']['batch_size']}\n")
         f.write(f" Test batch size: {cfg['test']['batch_size']}\n")
+        f.write(f" learning rate: {optim_cfg['lr']}\n")
+        f.write(f" weight decay: {optim_cfg['weight_decay']}\n")
         f.write(f" Model type: {model_type}\n")
         f.write(f" ------ViT Model Configuration------\n")
         f.write(f" ViT Model: {cfg['vit_model']}\n")
@@ -168,6 +156,11 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
         f.write(f" CNN Model: {cfg['cnn_model']}\n")
         f.write(f" ------Pointnet2 Model Configuration------\n")
         f.write(f" Pointnet2 Model: {cfg['pointnet2_model']}\n")
+        f.write(f" window_size_us: {ds['window_size_us']}\n")
+        f.write(f" stride_us: {ds['stride_us']}\n")
+        f.write(f" max_points: {ds['max_points']}\n")
+        f.write(f" window_size_event_count: {ds['window_size_event_count']}\n")
+        f.write(f" step_size: {ds['step_size']}\n")
         if pretrained_path is not None:
             f.write(f" Loaded pretrained model: {pretrained_path}\n")
     
@@ -193,24 +186,15 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
         avg_train_loss = total_loss / len(train_loader)
 
         print(f"Train Loss: {avg_train_loss:.4f}")
-        with open(log_path, 'a') as f:
-            f.write(f"\n[Epoch {epoch+1}/{cfg['epochs']}]\n")
-            f.write(f"Train Loss: {avg_train_loss:.4f}\n")
-
-        scheduler.step()
-        print(f"Learning rate: {scheduler.get_last_lr()[0]:.6f}")
-        with open(log_path, 'a') as f:
-            f.write(f"Learning rate: {scheduler.get_last_lr()[0]:.6f}\n")
-        
         num_train_batches = len(train_loader)
         num_train_samples = len(train_ds)
         print(f"Training statistics: {num_train_samples} samples in {num_train_batches} batches")
-        with open(log_path, 'a') as f:
-            f.write(f"Training statistics: {num_train_samples} samples in {num_train_batches} batches\n")
-        
         train_time = train_end_time - train_start_time
         print(f"Training time: {train_time:.2f} seconds")
         with open(log_path, 'a') as f:
+            f.write(f"\n[Epoch {epoch+1}/{cfg['epochs']}]\n")
+            f.write(f"Train Loss: {avg_train_loss:.4f}\n")
+            f.write(f"Training statistics: {num_train_samples} samples in {num_train_batches} batches\n")
             f.write(f"Training time: {train_time:.2f} seconds\n")
         
         # —— 验证 —— 
@@ -232,19 +216,20 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
         val_acc = correct / total
         
         print(f"Val Loss: {avg_val_loss:.4f}, Val Acc: {val_acc:.4f}")
-        with open(log_path, 'a') as f:
-            f.write(f"Val Loss: {avg_val_loss:.4f}, Val Acc: {val_acc:.4f}\n")
-        
         num_val_batches = len(val_loader)
         num_val_samples = len(val_ds)
         print(f"Validation statistics: {num_val_samples} samples in {num_val_batches} batches")
-        with open(log_path, 'a') as f:
-            f.write(f"Validation statistics: {num_val_samples} samples in {num_val_batches} batches\n")
-        
         val_time = val_end_time - val_start_time
         print(f"Validation time: {val_time:.2f} seconds")
         with open(log_path, 'a') as f:
+            f.write(f"Val Loss: {avg_val_loss:.4f}, Val Acc: {val_acc:.4f}\n")
+            f.write(f"Validation statistics: {num_val_samples} samples in {num_val_batches} batches\n")
             f.write(f"Validation time: {val_time:.2f} seconds\n")
+
+        # scheduler.step()
+        # print(f"Learning rate: {scheduler.get_last_lr()[0]:.6f}")
+        # with open(log_path, 'a') as f:
+        #     f.write(f"Learning rate: {scheduler.get_last_lr()[0]:.6f}\n")
 
         # —— 保存最佳模型 —— 
         if val_acc > best_acc:
@@ -258,39 +243,62 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
     print(f"Loaded best model from {best_model_path}")
     
     print("Testing...")
-    test_start_time = time.time()
     model.eval()
+    class_correct = {}
+    class_total = {}
+    class_names = list(ds['label_map'].keys())
     correct = total = 0
+    # Initialize counters for each class
+    for class_name in class_names:
+        class_correct[class_name] = 0
+        class_total[class_name] = 0
+    test_start_time = time.time()
     with torch.no_grad():
         for imgs, labels in tqdm.tqdm(test_loader):
             imgs   = imgs.to(device)
             labels = labels.to(device)
             logits = model(imgs)
             preds = logits.argmax(dim=1)
+
+            # Update per-class statistics
+            for i in range(len(labels)):
+                label_idx = labels[i].item()
+                pred_idx = preds[i].item()
+                label_name = class_names[label_idx]
+                class_total[label_name] += 1
+                if pred_idx == label_idx:
+                    class_correct[label_name] += 1
+
             correct += (preds == labels).sum().item()
             total   += labels.size(0)
     test_end_time = time.time()
     test_acc = correct / total
-    
-    with open(log_path, 'a') as f:
-        f.write(f"\nTest with best model from {best_model_path}\n")
-
     test_time = test_end_time - test_start_time
-    print(f"Test time: {test_time:.2f} seconds")
-    with open(log_path, 'a') as f:
-        f.write(f"Test time: {test_time:.2f} seconds\n")
-
-    print(f"Test Acc: {test_acc:.4f}")
-    with open(log_path, 'a') as f:
-        f.write(f"Test Acc: {test_acc:.4f} ({correct}/{total})\n")
-
     num_test_batches = len(test_loader)
     num_test_samples = len(test_ds)
     print(f"Test statistics: {num_test_samples} samples in {num_test_batches} batches")
-    print("Training complete. Best validation accuracy:", best_acc)
+    print(f"Test time: {test_time:.2f} seconds")
+    print("Best validation accuracy:", best_acc)
+    print(f"Test Acc: {test_acc:.4f}")
     with open(log_path, 'a') as f:
+        f.write(f"\nTest with best model from {best_model_path}\n")
         f.write(f"Test statistics: {num_test_samples} samples in {num_test_batches} batches\n")
-        f.write(f"Training complete. Best validation accuracy: {best_acc}\n")
+        f.write(f"Test time: {test_time:.2f} seconds\n")
+        f.write(f"Best validation accuracy: {best_acc}\n")
+        f.write(f"Test Acc: {test_acc:.4f} ({correct}/{total})\n")
+
+    # Print and log per-class accuracy
+    print("Per-class accuracy:")
+    with open(log_path, 'a') as f:
+        f.write("Per-class accuracy:\n")
+        for class_name in class_names:
+            if class_total[class_name] > 0:
+                accuracy = class_correct[class_name] / class_total[class_name]
+                print(f"{class_name}: {accuracy:.4f} ({class_correct[class_name]}/{class_total[class_name]})")
+                f.write(f"{class_name}: {accuracy:.4f} ({class_correct[class_name]}/{class_total[class_name]})\n")
+            else:
+                print(f"{class_name}: N/A (0/0)")
+                f.write(f"{class_name}: N/A (0/0)\n")
     
 
 if __name__ == '__main__':
@@ -298,9 +306,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='configs/har_train_config.yaml',
                         help='Path to config file')
-    parser.add_argument('--model', type=str, default='results/checkpoints/pointnet2_event_tmp.pth',
+    parser.add_argument('--model', type=str, default='results/checkpoints/pointnet2simple_event_4.pth',
                         help='Path to save the best model')
-    parser.add_argument('--log', type=str, default='results/logs/training_log_pointnet2_event_tmp.txt',
+    parser.add_argument('--log', type=str, default='results/logs/training_log_pointnet2simple_event_4.txt',
                         help='Path to the log file')
     parser.add_argument('--pretrained', type=str, default='pretrained/vitpose-l.pth',
                         help='Path to pre-trained weights')

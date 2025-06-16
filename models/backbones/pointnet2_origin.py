@@ -5,6 +5,19 @@ from time import time
 import numpy as np
 
 
+def timeit(tag, t):
+    print(f"{tag}: {time() - t}s")
+    return time()
+
+
+def pc_normalize(pc: np.ndarray) -> np.ndarray:
+    """Normalize a point cloud to zero mean and unit sphere."""
+    centroid = np.mean(pc, axis=0)
+    pc = pc - centroid
+    m = np.max(np.sqrt(np.sum(pc ** 2, axis=1)))
+    return pc / m
+
+
 def square_distance(src: torch.Tensor, dst: torch.Tensor) -> torch.Tensor:
     """Calculate squared Euclidean distance between each two points."""
     B, N, _ = src.shape
@@ -104,7 +117,7 @@ class PointNetSetAbstraction(nn.Module):
 
         self.mlp_convs = nn.ModuleList()
         self.mlp_bns = nn.ModuleList()
-        last_channel = in_channel + 3  # +3 for xyz offsets
+        last_channel = in_channel + 3 
         for out_channel in mlp:
             self.mlp_convs.append(nn.Conv2d(last_channel, out_channel, 1))
             self.mlp_bns.append(nn.BatchNorm2d(out_channel))
@@ -112,8 +125,6 @@ class PointNetSetAbstraction(nn.Module):
         self.group_all = group_all
 
     def forward(self, xyz, points):
-        # input shape is [B, C, N]
-        # covert to [B, N, C]
         xyz = xyz.permute(0, 2, 1)
         if points is not None:
             points = points.permute(0, 2, 1)
@@ -122,7 +133,6 @@ class PointNetSetAbstraction(nn.Module):
             new_xyz, new_points = sample_and_group_all(xyz, points)
         else:
             new_xyz, new_points = sample_and_group(self.npoint, self.radius, self.nsample, xyz, points)
-
         new_points = new_points.permute(0, 3, 2, 1)
         for i, conv in enumerate(self.mlp_convs):
             bn = self.mlp_bns[i]
@@ -185,6 +195,50 @@ class PointNetSetAbstractionMsg(nn.Module):
         return new_xyz, new_points_concat
 
 
+class PointNetFeaturePropagation(nn.Module):
+    def __init__(self, in_channel, mlp):
+        super().__init__()
+        self.mlp_convs = nn.ModuleList()
+        self.mlp_bns = nn.ModuleList()
+        last_channel = in_channel
+        for out_channel in mlp:
+            self.mlp_convs.append(nn.Conv1d(last_channel, out_channel, 1))
+            self.mlp_bns.append(nn.BatchNorm1d(out_channel))
+            last_channel = out_channel
+
+    def forward(self, xyz1, xyz2, points1, points2):
+        xyz1 = xyz1.permute(0, 2, 1)
+        xyz2 = xyz2.permute(0, 2, 1)
+
+        points2 = points2.permute(0, 2, 1)
+        B, N, C = xyz1.shape
+        _, S, _ = xyz2.shape
+
+        if S == 1:
+            interpolated_points = points2.repeat(1, N, 1)
+        else:
+            dists = square_distance(xyz1, xyz2)
+            dists, idx = dists.sort(dim=-1)
+            dists, idx = dists[:, :, :3], idx[:, :, :3]
+
+            dist_recip = 1.0 / (dists + 1e-8)
+            norm = torch.sum(dist_recip, dim=2, keepdim=True)
+            weight = dist_recip / norm
+            interpolated_points = torch.sum(index_points(points2, idx) * weight.view(B, N, 3, 1), dim=2)
+
+        if points1 is not None:
+            points1 = points1.permute(0, 2, 1)
+            new_points = torch.cat([points1, interpolated_points], dim=-1)
+        else:
+            new_points = interpolated_points
+
+        new_points = new_points.permute(0, 2, 1)
+        for i, conv in enumerate(self.mlp_convs):
+            bn = self.mlp_bns[i]
+            new_points = F.relu(bn(conv(new_points)))
+        return new_points
+
+
 class PointNet2Classifier(nn.Module):
     """
     Simple PointNet++ classification network.
@@ -194,6 +248,7 @@ class PointNet2Classifier(nn.Module):
     treated as spatial coordinates while the remaining values (if any) are
     forwarded as point features.
     """
+
     def __init__(self, cfg: dict):
         super().__init__()
         # ``in_channel`` here represents the dimensionality of the grouped
@@ -206,17 +261,17 @@ class PointNet2Classifier(nn.Module):
         in_channel = pointnet2_cfg['input_dim']
         
         self.sa1 = PointNetSetAbstraction(npoint=512, radius=0.2, nsample=32,
-                                          in_channel=2, mlp=[64, 64, 128], group_all=False)
+                                          in_channel=in_channel-3, mlp=[64, 64, 128], group_all=False)
         self.sa2 = PointNetSetAbstraction(npoint=128, radius=0.4, nsample=64,
                                           in_channel=128, mlp=[128, 128, 256], group_all=False)
         self.sa3 = PointNetSetAbstraction(npoint=None, radius=None, nsample=None,
                                           in_channel=256, mlp=[256, 512, 1024], group_all=True)
         self.fc1 = nn.Linear(1024, 512)
         self.bn1 = nn.BatchNorm1d(512)
-        self.drop1 = nn.Dropout(0.5)
+        self.drop1 = nn.Dropout(0.4)
         self.fc2 = nn.Linear(512, 256)
         self.bn2 = nn.BatchNorm1d(256)
-        self.drop2 = nn.Dropout(0.5)
+        self.drop2 = nn.Dropout(0.4)
         self.fc3 = nn.Linear(256, output_num_class)
 
     def forward(self, xyz: torch.Tensor) -> torch.Tensor:
@@ -264,3 +319,4 @@ class PointNet2Classifier(nn.Module):
             x = self.fc3(x)
             x = F.log_softmax(x, dim=1)
             return x
+

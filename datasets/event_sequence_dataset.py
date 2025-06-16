@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 class ESequenceDataset(Dataset):
     """事件序列数据集,将事件数据转换为适合PointNet++的点云格式"""
     def __init__(self, data_root, window_size_us, max_points, 
-                 time_dimension, enable_augment, stride_us):
+                 time_dimension, enable_augment, stride_us, label_map):
         """
         参数:
             data_root: 数据根目录，包含各个动作类别的子文件夹
@@ -43,20 +43,14 @@ class ESequenceDataset(Dataset):
         
         # 收集所有文件路径和初始标签
         initial_samples = []
-        self.classes = sorted([d for d in os.listdir(data_root) 
-                              if os.path.isdir(os.path.join(data_root, d))])
-        self.class_to_idx = {cls_name: idx for idx, cls_name in enumerate(self.classes)}
-        # print(f"[DEBUG] Class to idx mapping: {self.class_to_idx}")
-        
-        # 遍历文件夹，收集所有.npy文件的初始信息
-        for class_name in self.classes:
-            class_dir = os.path.join(data_root, class_name)
+        for cls_name, idx in label_map.items():
+            class_dir = os.path.join(data_root, cls_name)
             files = glob.glob(os.path.join(class_dir, "*.npy"))
             for file_path in files:
-                initial_samples.append((file_path, self.class_to_idx[class_name]))
-            # print(f"[DEBUG] Found {len(files)} files in class {class_name}")
+                initial_samples.append((file_path, idx))
+            print(f"[DEBUG] Found {len(files)} files in class {cls_name}")
         
-        print(f"找到了来自{len(self.classes)}个类别的{len(initial_samples)}个原始文件")
+        print(f"找到了来自{len(label_map)}个类别的{len(initial_samples)}个原始文件")
         
         # 应用滑动窗口处理，生成最终样本列表
         self.samples = []
@@ -351,18 +345,19 @@ if __name__ == '__main__':
     # 测试数据集
     ds_cfg = cfg['dataset']
     data_ds = ESequenceDataset(
-        data_root          = ds_cfg['test_dir'],
+        data_root          = ds_cfg['train_dir'],
         window_size_us     = ds_cfg['window_size_us'],
         stride_us          = ds_cfg['stride_us'],
         max_points         = ds_cfg['max_points'],
         time_dimension     = ds_cfg['time_dimension'],
-        enable_augment     = ds_cfg['enable_augment']
+        enable_augment     = ds_cfg['enable_augment'],
+        label_map          = ds_cfg['label_map']
     )
     
     # 保存处理后的数据集到文件
     save_dir = "preprocessing_data"
     os.makedirs(save_dir, exist_ok=True)
-    save_path = os.path.join(save_dir, "test_dataset.pkl")
+    save_path = os.path.join(save_dir, "train_dataset10.pkl")
     with open(save_path, 'wb') as f:
         pickle.dump(data_ds, f)
 
@@ -371,14 +366,13 @@ if __name__ == '__main__':
         with open(save_path, 'rb') as f:
             loaded_ds = pickle.load(f)
         print(f"成功加载数据集，包含 {len(loaded_ds)} 个样本")
-        print(f"类别到索引映射: {loaded_ds.class_to_idx}")
         
         # 随机检查一个样本 shape为 [N, 5] 或 [N, 4]， N为点云点数
         sample_idx = random.randint(0, len(loaded_ds)-1)
         sample_data, sample_label = loaded_ds[sample_idx]
         print(f"\n随机样本 #{sample_idx}:")
         print(f"  - 形状: {sample_data.shape}")
-        print(f"  - 标签: {sample_label} ({loaded_ds.classes[sample_label]})")
+        print(f"  - 标签: {sample_label}")
         print(f"  - 点云范围: x[{sample_data[:, 0].min():.2f}, {sample_data[:, 0].max():.2f}], "
               f"y[{sample_data[:, 1].min():.2f}, {sample_data[:, 1].max():.2f}]")
         
