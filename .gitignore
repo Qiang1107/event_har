@@ -5,6 +5,7 @@ results/0610/
 *.log
 *.pkl
 *.pth
+*.npz
 utils/origin_data/
 utils/train_data/
 utils/no_used/
