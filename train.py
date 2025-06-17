@@ -13,8 +13,7 @@ from datasets.event_sequence_dataset import ESequenceDataset
 from datasets.event_count_seq_dataset import ECountSeqDataset
 from models.model import VitModel
 from models.backbones.cnn import CNN_model
-from models.backbones.pointnet2_simple import PointNet2ClassifierSimple
-# from models.backbones.pointnet2 import PointNet2Classifier
+from models.backbones.pointnet2 import PointNet2Classifier
 # from models.losses.cross_entropy_loss import CrossEntropyLoss
 from utils.weight_utils import load_vitpose_pretrained
 
@@ -88,7 +87,7 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
             print(f"Loaded pretrained model from {pretrained_path}")
         loss_fn = nn.CrossEntropyLoss()
     elif model_type == 'pointnet2':
-        model = PointNet2ClassifierSimple(cfg).to(device)
+        model = PointNet2Classifier(cfg).to(device)
         # loss_fn = nn.NLLLoss()
         loss_fn = nn.CrossEntropyLoss()
     elif model_type == 'cnn':
@@ -108,7 +107,7 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
     # —— 带预热的余弦退火学习率调度器 —— 
     cosine_warmup_scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=2, eta_min=1e-6)
     # —— StepLR 学习率调度器 ——
-    step_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.5)
+    step_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
     # —— 余弦退火学习率调度器 —— 
     cosine_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg['epochs'], eta_min=1e-6)
     # —— 带预热的线性衰减调度器 —— 
@@ -132,7 +131,7 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
     )
 
     # 使用其中一个调度器 
-    # scheduler = step_scheduler
+    scheduler = step_scheduler
 
     # 4. 创建日志目录和文件
     if log_path is None:
@@ -174,7 +173,7 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
         model.train()
         total_loss = 0.0
         for imgs, labels in tqdm.tqdm(train_loader):
-            imgs   = imgs.to(device)
+            imgs = imgs.float().to(device)
             labels = labels.to(device)
             logits = model(imgs)
             loss = loss_fn(logits, labels)
@@ -204,7 +203,7 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
         val_loss = correct = total = 0.0
         with torch.no_grad():
             for imgs, labels in tqdm.tqdm(val_loader):
-                imgs   = imgs.to(device)
+                imgs = imgs.float().to(device)
                 labels = labels.to(device)
                 logits = model(imgs)
                 val_loss += loss_fn(logits, labels).item()
@@ -226,10 +225,10 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
             f.write(f"Validation statistics: {num_val_samples} samples in {num_val_batches} batches\n")
             f.write(f"Validation time: {val_time:.2f} seconds\n")
 
-        # scheduler.step()
-        # print(f"Learning rate: {scheduler.get_last_lr()[0]:.6f}")
-        # with open(log_path, 'a') as f:
-        #     f.write(f"Learning rate: {scheduler.get_last_lr()[0]:.6f}\n")
+        scheduler.step()
+        print(f"Learning rate: {scheduler.get_last_lr()[0]:.6f}")
+        with open(log_path, 'a') as f:
+            f.write(f"Learning rate: {scheduler.get_last_lr()[0]:.6f}\n")
 
         # —— 保存最佳模型 —— 
         if val_acc > best_acc:
@@ -255,7 +254,7 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
     test_start_time = time.time()
     with torch.no_grad():
         for imgs, labels in tqdm.tqdm(test_loader):
-            imgs   = imgs.to(device)
+            imgs = imgs.float().to(device)
             labels = labels.to(device)
             logits = model(imgs)
             preds = logits.argmax(dim=1)

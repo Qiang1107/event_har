@@ -1,9 +1,10 @@
 data/
-results/
-pretrained/
-preprocessing_data/
-zyc/
+results/0527/
+results/0610/
 **/__pycache__
 *.log
+*.pkl
+*.pth
 utils/origin_data/
 utils/train_data/
+utils/no_used/
