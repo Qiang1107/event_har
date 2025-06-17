@@ -14,6 +14,7 @@ from datasets.event_count_seq_dataset import ECountSeqDataset
 from models.model import VitModel
 from models.backbones.cnn import CNN_model
 from models.backbones.pointnet2 import PointNet2Classifier
+from models.backbones.pointnet2msg import PointNet2MSGClassifier
 # from models.losses.cross_entropy_loss import CrossEntropyLoss
 from utils.weight_utils import load_vitpose_pretrained
 
@@ -26,20 +27,30 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
 
     # 2. 构造 Dataset & DataLoader
     ds = cfg['dataset']
-    if model_type == 'pointnet2':
+    if model_type in ['pointnet2', 'pointnet2msg']:
         pnet2_data_dir = "preprocessing_data"
         pnet2_train_path = os.path.join(pnet2_data_dir, "train_dataset10_ecount.pkl")
+        print(f"Start loading training dataset from {pnet2_train_path}")
         with open(pnet2_train_path, 'rb') as f:
             train_ds = pickle.load(f)
+        print(f"Loaded training dataset with {len(train_ds)} samples")
+        
         pnet2_val_path = os.path.join(pnet2_data_dir, "val_dataset10_ecount.pkl")
+        print(f"Start loading validation dataset from {pnet2_val_path}")
         with open(pnet2_val_path, 'rb') as f:
             val_ds = pickle.load(f)
+        print(f"Loaded validation dataset with {len(val_ds)} samples")
+        
         pnet2_test_path = os.path.join(pnet2_data_dir, "test_dataset10_ecount.pkl")
+        print(f"Start loading test dataset from {pnet2_test_path}")
         with open(pnet2_test_path, 'rb') as f:
-            test_ds = pickle.load(f)       
+            test_ds = pickle.load(f)
+        print(f"Loaded test dataset with {len(test_ds)} samples")
+
         train_loader = DataLoader(train_ds, **cfg['train'])
         val_loader = DataLoader(val_ds, **cfg['val'])
         test_loader = DataLoader(test_ds, **cfg['test'])
+        print("DataLoader created for PointNet2 datasets.")
         
     else:
         train_ds = RGBESequenceDataset(
@@ -90,6 +101,9 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
         model = PointNet2Classifier(cfg).to(device)
         # loss_fn = nn.NLLLoss()
         loss_fn = nn.CrossEntropyLoss()
+    elif model_type == 'pointnet2msg':
+        model = PointNet2MSGClassifier(cfg).to(device)
+        loss_fn = nn.CrossEntropyLoss()
     elif model_type == 'cnn':
         model = CNN_model(cfg).to(device)
         loss_fn = nn.CrossEntropyLoss()
@@ -131,7 +145,7 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
     )
 
     # 使用其中一个调度器 
-    scheduler = step_scheduler
+    # scheduler = step_scheduler
 
     # 4. 创建日志目录和文件
     if log_path is None:
@@ -225,10 +239,10 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
             f.write(f"Validation statistics: {num_val_samples} samples in {num_val_batches} batches\n")
             f.write(f"Validation time: {val_time:.2f} seconds\n")
 
-        scheduler.step()
-        print(f"Learning rate: {scheduler.get_last_lr()[0]:.6f}")
-        with open(log_path, 'a') as f:
-            f.write(f"Learning rate: {scheduler.get_last_lr()[0]:.6f}\n")
+        # scheduler.step()
+        # print(f"Learning rate: {scheduler.get_last_lr()[0]:.6f}")
+        # with open(log_path, 'a') as f:
+        #     f.write(f"Learning rate: {scheduler.get_last_lr()[0]:.6f}\n")
 
         # —— 保存最佳模型 —— 
         if val_acc > best_acc:
@@ -305,9 +319,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='configs/har_train_config.yaml',
                         help='Path to config file')
-    parser.add_argument('--model', type=str, default='results/checkpoints/pointnet2_event_5.pth',
+    parser.add_argument('--model', type=str, default='results/checkpoints/pointnet2msg_event_1.pth',
                         help='Path to save the best model')
-    parser.add_argument('--log', type=str, default='results/logs/training_log_pointnet2_event_5.txt',
+    parser.add_argument('--log', type=str, default='results/logs/training_log_pointnet2msg_event_1.txt',
                         help='Path to the log file')
     parser.add_argument('--pretrained', type=str, default='pretrained/vitpose-l.pth',
                         help='Path to pre-trained weights')

@@ -51,15 +51,16 @@ dataset:
 # ===== DataLoader 参数 =====
 train:
   # ---------------------------------------
-  # 32 for vit, 16 for cnn, 
-  batch_size:   128
+  # 32 for vit, 16 for cnn, 128 for pointnet2 in server
+  # 64 for pointnet2msg in server
+  batch_size:   16
   # ---------------------------------------
   num_workers:  0     # 子进程加载训练数据
   shuffle:      true
 
 val:
   # ---------------------------------------
-  batch_size:   128
+  batch_size:   16
   # ---------------------------------------
   num_workers:  0     
   shuffle:      false
@@ -132,13 +133,13 @@ pointnet2_model:
 # ===== 优化器 & 训练 =====
 optimizer:
   type:         AdamW # 可选：SGD / Adam / AdamW
-  lr:           0.01 # 0.0001 or 2e-4 or 0.00025
+  lr:           0.00025 # 0.0001 or 2e-4 or 0.00025 or 0.01
   weight_decay: 1e-2 # 0.001 or 5e-3
 
-epochs:   30
+epochs:   25
 device:   cuda:0
 work_dir: results/checkpoints
 log_dir: results/logs
 # ---------------------------------------
-model_type: pointnet2  # options: cnn / vit / pointnet2
+model_type: pointnet2msg  # options: cnn / vit / pointnet2 / pointnet2msg
 # ---------------------------------------
