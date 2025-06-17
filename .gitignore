@@ -8,4 +8,4 @@ results/0610/
 *.npz
 utils/origin_data/
 utils/train_data/
-utils/no_used/
+utils/no_used/zyc/
