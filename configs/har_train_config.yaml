@@ -43,8 +43,8 @@ dataset:
   time_dimension:          true    # 是否使用时间维度
   enable_augment:          false   # 是否启用数据增强
   t_squash_factor:         3333   # 每t_squash_factor微秒内的时间戳表示成一个时间戳
-  target_width:            346     # 目标图像宽度256 128
-  target_height:           260     # 目标图像高度192 96
+  target_width:            346     # 目标图像宽度 346 256 128
+  target_height:           260     # 目标图像高度 260 192 96
   min_events_per_window:   4000    # 一个时间窗口中最小事件数阈值
 
   window_size_event_count: 8192  # 窗口包含的事件数
@@ -56,15 +56,15 @@ dataset:
 train:
   # ---------------------------------------
   # 32 for vit, 16 for cnn, 128 for pointnet2 in server
-  # 64 for pointnet2msg in server
-  batch_size:   16
+  # 32 for pointnet2msg in server
+  batch_size:   32
   # ---------------------------------------
   num_workers:  0     # 子进程加载训练数据
   shuffle:      true
 
 val:
   # ---------------------------------------
-  batch_size:   16
+  batch_size:   32
   # ---------------------------------------
   num_workers:  0     
   shuffle:      false
@@ -128,7 +128,7 @@ cnn_model:
 
 # ===== pointnet2模型配置 =====
 pointnet2_model:
-  num_classes: 12
+  num_classes: 10
   normal_channel: False  # 事件数据没有法向量
   input_dim: 4  # 5 当time_dimension=True时,4 当time_dimension=False # eventcout 处理时为4
   
