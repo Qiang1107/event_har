@@ -68,15 +68,16 @@ def parse_log(log_path):
 if __name__ == "__main__":
     os.makedirs('results/figs', exist_ok=True)    
     # ====== 配置区 ======
-    Log_path   = 'results/logs/training_log_pointnet2_event_7.txt'  # 日志文件
+    Log_path   = 'results/logs/training_log_pointnet2msg_event_8.txt'  # 日志文件
 
     # None  # 如果指定，保存为该文件，否则直接 plt.show()
-    val_acc_save_path  = 'results/figs/pointnet2_event_7_val_acc.png' 
-    train_loss_save_path  = 'results/figs/pointnet2_event_7_train_loss.png'
-    trainval_loss_save_path  = 'results/figs/pointnet2_event_7_trainval_loss.png'
-    trainval_time_save_path  = 'results/figs/pointnet2_event_7_trainval_time.png'
-    test_acc_save_path  = 'results/figs/pointnet2_event_7_test_acc.png' 
-    manually_save_path = 'results/figs/all_models_test_acc.png' 
+    val_acc_save_path  = 'results/figs/pointnet2msg_event_8_val_acc.png' 
+    train_loss_save_path  = 'results/figs/pointnet2msg_event_8_train_loss.png'
+    trainval_loss_save_path  = 'results/figs/pointnet2msg_event_8_trainval_loss.png'
+    trainval_time_save_path  = 'results/figs/pointnet2msg_event_8_trainval_time.png'
+    test_acc_save_path  = 'results/figs/pointnet2msg_event_8_test_acc.png' 
+    manually_all_models_test_acc_save_path = 'results/figs/all_models_test_acc.png' 
+    manually_all_models_test_time_save_path = 'results/figs/all_models_test_time.png' 
     # ====================
 
     results = parse_log(Log_path)
@@ -96,6 +97,7 @@ if __name__ == "__main__":
     print("4 - Training & Validation Time")
     print("5 - Test Accuracy")
     print("6 - All Models' Test Accuracy")
+    print("7 - All Models' Test Time")
     
     choice = input("请输入选项编号(1-n): ")
     
@@ -114,20 +116,20 @@ if __name__ == "__main__":
                     xy=(max_epoch, max_acc),
                     xytext=(max_epoch + 1, max_acc),  # 文本位置稍微偏右
                     ha='left')  # 左对齐，使文本从指定位置向右延伸
-        # 找出最后一个值并标注
-        last_acc_idx = -1  # 最后一个值的索引
-        last_acc = val_accs[last_acc_idx]
-        last_epoch = epochs[last_acc_idx]
-        # 在最后一个值点处添加特殊标记
-        plt.plot(last_epoch, last_acc, 'rs', markersize=8)  
-        # 添加文本标注
-        plt.annotate(f'Last: {last_acc:.4f}', 
-                     xy=(last_epoch, last_acc),
-                     xytext=(last_epoch, last_acc + 0.005),  # 文本位置稍微偏上
-                     ha='center')  # 中心对齐，使文本从指定位置向上延伸
+        # # 找出最后一个值并标注
+        # last_acc_idx = -1  # 最后一个值的索引
+        # last_acc = val_accs[last_acc_idx]
+        # last_epoch = epochs[last_acc_idx]
+        # # 在最后一个值点处添加特殊标记
+        # plt.plot(last_epoch, last_acc, 'rs', markersize=8)  
+        # # 添加文本标注
+        # plt.annotate(f'Last: {last_acc:.4f}', 
+        #              xy=(last_epoch, last_acc),
+        #              xytext=(last_epoch, last_acc + 0.005),  # 文本位置稍微偏上
+        #              ha='center')  # 中心对齐，使文本从指定位置向上延伸
         plt.xlabel('Epoch')
         plt.ylabel('Validation Accuracy')
-        plt.title('Epoch vs Validation Accuracy')
+        plt.title('Validation Accuracy per Epoch')
         plt.grid(True)
         # 设置坐标轴从0开始
         # plt.xlim(0, max(epochs))
@@ -146,7 +148,7 @@ if __name__ == "__main__":
         plt.plot(epochs, train_losses, marker='o', linestyle='-')
         plt.xlabel('Epoch')
         plt.ylabel('Training Loss')
-        plt.title('Epoch vs Training Loss')
+        plt.title('Training Loss per Epoch')
         plt.grid(True)
         plt.tight_layout()
         if train_loss_save_path:
@@ -163,7 +165,7 @@ if __name__ == "__main__":
         plt.plot(epochs, val_losses, marker='s', linestyle='-', label='Validation Loss')
         plt.xlabel('Epoch')
         plt.ylabel('Loss')
-        plt.title('Training and Validation Loss')
+        plt.title('Training and Validation Loss per Epoch')
         plt.legend()
         plt.grid(True)
         plt.tight_layout()
@@ -250,7 +252,7 @@ if __name__ == "__main__":
             plt.show()
 
     elif choice == '6':
-        # 手动绘制柱形图，手动设置xy数据。
+        # 手动绘制柱形图，手动设置xy数据。所有模型的测试准确率。
         color_schemes = {
             '1': 'skyblue',  # 原始颜色
             '2': "#19547e",  # 自定义色彩，可选
@@ -275,10 +277,43 @@ if __name__ == "__main__":
         for i, acc in enumerate(y_val):
             plt.text(i, acc + 0.01, f'{acc:.4f}', ha='center', va='bottom')
         plt.tight_layout()
-        if manually_save_path:
+        if manually_all_models_test_acc_save_path:
             # plt.show()
-            plt.savefig(manually_save_path, dpi=150)
-            print(f"图已保存到 {manually_save_path}")
+            plt.savefig(manually_all_models_test_acc_save_path, dpi=150)
+            print(f"图已保存到 {manually_all_models_test_acc_save_path}")
+        else:
+            plt.show()
+
+    elif choice == '7':
+        # 手动绘制柱形图，手动设置xy数据。所有模型的测试时间。
+        color_schemes = {
+            '1': 'skyblue',  # 原始颜色
+            '2': "#19547e",  # 自定义色彩，可选
+            '3': ['#e74c3c', '#8e44ad', '#3498db', '#2ecc71', '#f1c40f', 
+                 '#e67e22', '#1abc9c', '#2c3e50', '#95a5a6', '#d35400'] # 参考颜色
+        }
+        x_val = ['Align_screwdriver', 'Align_wrench', 'Align_hammer',
+                   'Align_saw', 'Align_pliers', 'Align_screwdriver_2', 
+                   'Align_wrench_2', 'Align_hammer_2', 'Align_saw_2', 
+                   'Align_pliers_2', 'Overall']
+        y_val = [0.8630, 0.8700, 0.8500, 0.8400, 0.8300, 
+                      0.8600, 0.8800, 0.8700, 0.8600, 0.8500, 0.8654]
+        plt.figure(figsize=(10, 6))
+        bars = plt.bar(x_val, y_val, color='#19547e')
+        plt.xlabel('Model Sets')
+        plt.ylabel('Test Time (s)')
+        plt.title('Test Time for Different Model Sets')
+        plt.xticks(rotation=45, ha='right')
+        plt.ylim(0, 1.0)
+        plt.grid(axis='y', linestyle='--', alpha=0.7)
+        # 添加每个柱子的数值标签
+        for i, acc in enumerate(y_val):
+            plt.text(i, acc + 0.01, f'{acc:.4f}', ha='center', va='bottom')
+        plt.tight_layout()
+        if manually_all_models_test_time_save_path:
+            # plt.show()
+            plt.savefig(manually_all_models_test_time_save_path, dpi=150)
+            print(f"图已保存到 {manually_all_models_test_time_save_path}")
         else:
             plt.show()
 

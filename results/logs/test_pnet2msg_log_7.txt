@@ -1,0 +1,177 @@
+ Model loaded from: results/checkpoints/pointnet2msg_event_7.pth
+ Model type: pointnet2msg
+ ------Pointnet2 Model Configuration------
+ Loaded test data from: preprocessing_data/test_dataset10_eseq7.pkl
+
+-----------------------------------------------------------------------
+Iteration 1:
+Test statistics: 1565 samples in 196 batches
+Test time: 3.24 seconds
+Test Acc: 0.8716 (1364/1565)
+Per-class accuracy:
+Align_screwdriver: 0.9178 (134/146)
+Approach: 0.9405 (79/84)
+Pick_bolt: 0.3396 (18/53)
+Pick_cover: 0.8364 (46/55)
+Pick_screwdriver: 0.4091 (18/44)
+Place_bolt: 0.6784 (173/255)
+Place_cover: 0.9346 (300/321)
+Put_down_screwdriver: 0.9757 (201/206)
+Screw: 0.9839 (244/248)
+Transition: 0.9869 (151/153)
+
+-----------------------------------------------------------------------
+Iteration 2:
+Test statistics: 1565 samples in 196 batches
+Test time: 3.06 seconds
+Test Acc: 0.8696 (1361/1565)
+Per-class accuracy:
+Align_screwdriver: 0.9110 (133/146)
+Approach: 0.9524 (80/84)
+Pick_bolt: 0.3962 (21/53)
+Pick_cover: 0.8545 (47/55)
+Pick_screwdriver: 0.4545 (20/44)
+Place_bolt: 0.6784 (173/255)
+Place_cover: 0.9283 (298/321)
+Put_down_screwdriver: 0.9612 (198/206)
+Screw: 0.9758 (242/248)
+Transition: 0.9739 (149/153)
+
+-----------------------------------------------------------------------
+Iteration 3:
+Test statistics: 1565 samples in 196 batches
+Test time: 3.05 seconds
+Test Acc: 0.8709 (1363/1565)
+Per-class accuracy:
+Align_screwdriver: 0.9110 (133/146)
+Approach: 0.9643 (81/84)
+Pick_bolt: 0.3962 (21/53)
+Pick_cover: 0.8545 (47/55)
+Pick_screwdriver: 0.4091 (18/44)
+Place_bolt: 0.6941 (177/255)
+Place_cover: 0.9252 (297/321)
+Put_down_screwdriver: 0.9806 (202/206)
+Screw: 0.9556 (237/248)
+Transition: 0.9804 (150/153)
+
+-----------------------------------------------------------------------
+Iteration 4:
+Test statistics: 1565 samples in 196 batches
+Test time: 3.05 seconds
+Test Acc: 0.8748 (1369/1565)
+Per-class accuracy:
+Align_screwdriver: 0.9384 (137/146)
+Approach: 0.9524 (80/84)
+Pick_bolt: 0.3396 (18/53)
+Pick_cover: 0.8909 (49/55)
+Pick_screwdriver: 0.4318 (19/44)
+Place_bolt: 0.6745 (172/255)
+Place_cover: 0.9346 (300/321)
+Put_down_screwdriver: 0.9757 (201/206)
+Screw: 0.9798 (243/248)
+Transition: 0.9804 (150/153)
+
+-----------------------------------------------------------------------
+Iteration 5:
+Test statistics: 1565 samples in 196 batches
+Test time: 3.05 seconds
+Test Acc: 0.8645 (1353/1565)
+Per-class accuracy:
+Align_screwdriver: 0.9315 (136/146)
+Approach: 0.9405 (79/84)
+Pick_bolt: 0.3962 (21/53)
+Pick_cover: 0.8182 (45/55)
+Pick_screwdriver: 0.4318 (19/44)
+Place_bolt: 0.6353 (162/255)
+Place_cover: 0.9221 (296/321)
+Put_down_screwdriver: 0.9806 (202/206)
+Screw: 0.9798 (243/248)
+Transition: 0.9804 (150/153)
+
+-----------------------------------------------------------------------
+Iteration 6:
+Test statistics: 1565 samples in 196 batches
+Test time: 3.06 seconds
+Test Acc: 0.8690 (1360/1565)
+Per-class accuracy:
+Align_screwdriver: 0.9247 (135/146)
+Approach: 0.9643 (81/84)
+Pick_bolt: 0.3208 (17/53)
+Pick_cover: 0.8727 (48/55)
+Pick_screwdriver: 0.4545 (20/44)
+Place_bolt: 0.6471 (165/255)
+Place_cover: 0.9346 (300/321)
+Put_down_screwdriver: 0.9757 (201/206)
+Screw: 0.9798 (243/248)
+Transition: 0.9804 (150/153)
+
+-----------------------------------------------------------------------
+Iteration 7:
+Test statistics: 1565 samples in 196 batches
+Test time: 3.05 seconds
+Test Acc: 0.8728 (1366/1565)
+Per-class accuracy:
+Align_screwdriver: 0.8973 (131/146)
+Approach: 0.9524 (80/84)
+Pick_bolt: 0.3019 (16/53)
+Pick_cover: 0.8909 (49/55)
+Pick_screwdriver: 0.4318 (19/44)
+Place_bolt: 0.6745 (172/255)
+Place_cover: 0.9408 (302/321)
+Put_down_screwdriver: 0.9854 (203/206)
+Screw: 0.9839 (244/248)
+Transition: 0.9804 (150/153)
+
+-----------------------------------------------------------------------
+Iteration 8:
+Test statistics: 1565 samples in 196 batches
+Test time: 3.05 seconds
+Test Acc: 0.8601 (1346/1565)
+Per-class accuracy:
+Align_screwdriver: 0.9384 (137/146)
+Approach: 0.9524 (80/84)
+Pick_bolt: 0.3208 (17/53)
+Pick_cover: 0.8545 (47/55)
+Pick_screwdriver: 0.5000 (22/44)
+Place_bolt: 0.6196 (158/255)
+Place_cover: 0.9221 (296/321)
+Put_down_screwdriver: 0.9660 (199/206)
+Screw: 0.9677 (240/248)
+Transition: 0.9804 (150/153)
+
+-----------------------------------------------------------------------
+Iteration 9:
+Test statistics: 1565 samples in 196 batches
+Test time: 3.05 seconds
+Test Acc: 0.8760 (1371/1565)
+Per-class accuracy:
+Align_screwdriver: 0.9110 (133/146)
+Approach: 0.9762 (82/84)
+Pick_bolt: 0.3585 (19/53)
+Pick_cover: 0.8909 (49/55)
+Pick_screwdriver: 0.4545 (20/44)
+Place_bolt: 0.6745 (172/255)
+Place_cover: 0.9408 (302/321)
+Put_down_screwdriver: 0.9709 (200/206)
+Screw: 0.9839 (244/248)
+Transition: 0.9804 (150/153)
+
+-----------------------------------------------------------------------
+Iteration 10:
+Test statistics: 1565 samples in 196 batches
+Test time: 3.06 seconds
+Test Acc: 0.8645 (1353/1565)
+Per-class accuracy:
+Align_screwdriver: 0.9384 (137/146)
+Approach: 0.9405 (79/84)
+Pick_bolt: 0.3396 (18/53)
+Pick_cover: 0.8545 (47/55)
+Pick_screwdriver: 0.4545 (20/44)
+Place_bolt: 0.6275 (160/255)
+Place_cover: 0.9408 (302/321)
+Put_down_screwdriver: 0.9563 (197/206)
+Screw: 0.9798 (243/248)
+Transition: 0.9804 (150/153)
+
+
+Test Time for one simple: 1.96 ms
