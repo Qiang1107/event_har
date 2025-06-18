@@ -56,15 +56,15 @@ dataset:
 train:
   # ---------------------------------------
   # 32 for vit, 16 for cnn, 128 for pointnet2 in server
-  # 32 for pointnet2msg in server
-  batch_size:   32
+  # 32 or 16 for pointnet2msg in server
+  batch_size:   16
   # ---------------------------------------
   num_workers:  0     # 子进程加载训练数据
   shuffle:      true
 
 val:
   # ---------------------------------------
-  batch_size:   32
+  batch_size:   16
   # ---------------------------------------
   num_workers:  0     
   shuffle:      false
@@ -140,10 +140,10 @@ optimizer:
   lr:           0.00025 # 0.0001 or 2e-4 or 0.00025 or 0.01
   weight_decay: 1e-2 # 0.001 or 5e-3
 
-epochs:   100
+epochs:   30
 device:   cuda:0
 work_dir: results/checkpoints
 log_dir: results/logs
 # ---------------------------------------
-model_type: pointnet2  # options: cnn / vit / pointnet2 / pointnet2msg
+model_type: pointnet2msg  # options: cnn / vit / pointnet2 / pointnet2msg
 # ---------------------------------------
