@@ -33,15 +33,19 @@ dataset:
     Screw:                 8
     Transition:            9
 
-  window_size: 9          # 定长帧数
-  stride:      3          # 滑动步长
-  enable_transform: true  # 是否启用数据变换
+  window_size:             9 # 定长帧数
+  stride:                  3 # 滑动步长
+  enable_transform:        true  # 是否启用数据变换
   
-  window_size_us: 333333  # 单位微秒us, (333333/1000000)* 30fps = 10帧
-  stride_us:      66666   # 单位微秒us, (66666/1000000)* 30fps = 2帧
-  max_points:     8192       # 点云最大点数 4096
-  time_dimension: true    # 是否使用时间维度
-  enable_augment: false   # 是否启用数据增强
+  window_size_us:          333333  # 单位微秒us, (333333/1000000)* 30fps = 10帧
+  stride_us:               66666   # 单位微秒us, (66666/1000000)* 30fps = 2帧
+  max_points:              8192    # 点云最大点数 4096 8192
+  time_dimension:          true    # 是否使用时间维度
+  enable_augment:          false   # 是否启用数据增强
+  t_squash_factor:         3333   # 每t_squash_factor微秒内的时间戳表示成一个时间戳
+  target_width:            346     # 目标图像宽度256 128
+  target_height:           260     # 目标图像高度192 96
+  min_events_per_window:   4000    # 一个时间窗口中最小事件数阈值
 
   window_size_event_count: 8192  # 窗口包含的事件数
   step_size:               1024  # 滑动窗口步长（事件数）
@@ -136,10 +140,10 @@ optimizer:
   lr:           0.00025 # 0.0001 or 2e-4 or 0.00025 or 0.01
   weight_decay: 1e-2 # 0.001 or 5e-3
 
-epochs:   25
+epochs:   100
 device:   cuda:0
 work_dir: results/checkpoints
 log_dir: results/logs
 # ---------------------------------------
-model_type: pointnet2msg  # options: cnn / vit / pointnet2 / pointnet2msg
+model_type: pointnet2  # options: cnn / vit / pointnet2 / pointnet2msg
 # ---------------------------------------

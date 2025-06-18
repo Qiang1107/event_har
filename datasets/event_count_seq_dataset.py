@@ -104,7 +104,8 @@ if __name__ == '__main__':
         print(f"  - 形状: {sample_data.shape}")
         print(f"  - 标签: {sample_label}")
         print(f"  - 点云范围: x[{sample_data[:, 0].min():.2f}, {sample_data[:, 0].max():.2f}], "
-              f"y[{sample_data[:, 1].min():.2f}, {sample_data[:, 1].max():.2f}]")
+              f"y[{sample_data[:, 1].min():.2f}, {sample_data[:, 1].max():.2f}], "
+              f"t[{sample_data[:, 2].min():.2f}, {sample_data[:, 2].max():.2f}]")
         
         file_size_mb = os.path.getsize(save_path) / (1024 * 1024)
         print(f"\n数据集文件大小: {file_size_mb:.2f} MB")

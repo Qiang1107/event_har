@@ -29,19 +29,20 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
     ds = cfg['dataset']
     if model_type in ['pointnet2', 'pointnet2msg']:
         pnet2_data_dir = "preprocessing_data"
-        pnet2_train_path = os.path.join(pnet2_data_dir, "train_dataset10_ecount.pkl")
+        pnet2_train_pkl = "train_dataset10_eseq.pkl"
+        pnet2_train_path = os.path.join(pnet2_data_dir, pnet2_train_pkl)
         print(f"Start loading training dataset from {pnet2_train_path}")
         with open(pnet2_train_path, 'rb') as f:
             train_ds = pickle.load(f)
         print(f"Loaded training dataset with {len(train_ds)} samples")
         
-        pnet2_val_path = os.path.join(pnet2_data_dir, "val_dataset10_ecount.pkl")
+        pnet2_val_path = os.path.join(pnet2_data_dir, "val_dataset10_eseq.pkl")
         print(f"Start loading validation dataset from {pnet2_val_path}")
         with open(pnet2_val_path, 'rb') as f:
             val_ds = pickle.load(f)
         print(f"Loaded validation dataset with {len(val_ds)} samples")
         
-        pnet2_test_path = os.path.join(pnet2_data_dir, "test_dataset10_ecount.pkl")
+        pnet2_test_path = os.path.join(pnet2_data_dir, "test_dataset10_eseq.pkl")
         print(f"Start loading test dataset from {pnet2_test_path}")
         with open(pnet2_test_path, 'rb') as f:
             test_ds = pickle.load(f)
@@ -163,19 +164,27 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
         f.write(f" learning rate: {optim_cfg['lr']}\n")
         f.write(f" weight decay: {optim_cfg['weight_decay']}\n")
         f.write(f" Model type: {model_type}\n")
-        f.write(f" ------ViT Model Configuration------\n")
-        f.write(f" ViT Model: {cfg['vit_model']}\n")
-        f.write(f" ------CNN Model Configuration------\n")
-        f.write(f" CNN Model: {cfg['cnn_model']}\n")
-        f.write(f" ------Pointnet2 Model Configuration------\n")
-        f.write(f" Pointnet2 Model: {cfg['pointnet2_model']}\n")
-        f.write(f" window_size_us: {ds['window_size_us']}\n")
-        f.write(f" stride_us: {ds['stride_us']}\n")
-        f.write(f" max_points: {ds['max_points']}\n")
-        f.write(f" window_size_event_count: {ds['window_size_event_count']}\n")
-        f.write(f" step_size: {ds['step_size']}\n")
-        if pretrained_path is not None:
-            f.write(f" Loaded pretrained model: {pretrained_path}\n")
+        if model_type == 'vit':
+            f.write(f" ------ViT Model Configuration------\n")
+            f.write(f" ViT Model: {cfg['vit_model']}\n")
+            if pretrained_path is not None:
+                f.write(f" Loaded pretrained model: {pretrained_path}\n")
+        if model_type == 'cnn':
+            f.write(f" ------CNN Model Configuration------\n")
+            f.write(f" CNN Model: {cfg['cnn_model']}\n")
+        if model_type in ['pointnet2', 'pointnet2msg']:
+            f.write(f" ------Pointnet2 Model Configuration------\n")
+            f.write(f" Loaded training data from: {pnet2_train_path}\n")
+            f.write(f" Pointnet2 Model: {cfg['pointnet2_model']}\n")
+            f.write(f" window_size_us: {ds['window_size_us']}\n")
+            f.write(f" stride_us: {ds['stride_us']}\n")
+            f.write(f" max_points: {ds['max_points']}\n")
+            f.write(f" t_squash_factor: {ds['t_squash_factor']}\n")
+            f.write(f" target_width: {ds['target_width']}\n")
+            f.write(f" target_height: {ds['target_height']}\n")
+            f.write(f" min_events_per_window: {ds['min_events_per_window']}\n")
+            f.write(f" window_size_event_count: {ds['window_size_event_count']}\n")
+            f.write(f" step_size: {ds['step_size']}\n")
     
     # 5. 训练、验证、测试
     best_acc = 0.0
@@ -319,9 +328,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='configs/har_train_config.yaml',
                         help='Path to config file')
-    parser.add_argument('--model', type=str, default='results/checkpoints/pointnet2msg_event_1.pth',
+    parser.add_argument('--model', type=str, default='results/checkpoints/pointnet2_event_7.pth',
                         help='Path to save the best model')
-    parser.add_argument('--log', type=str, default='results/logs/training_log_pointnet2msg_event_1.txt',
+    parser.add_argument('--log', type=str, default='results/logs/training_log_pointnet2_event_7.txt',
                         help='Path to the log file')
     parser.add_argument('--pretrained', type=str, default='pretrained/vitpose-l.pth',
                         help='Path to pre-trained weights')

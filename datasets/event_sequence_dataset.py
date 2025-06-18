@@ -14,7 +14,9 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 class ESequenceDataset(Dataset):
     """事件序列数据集,将事件数据转换为适合PointNet++的点云格式"""
     def __init__(self, data_root, window_size_us, max_points, 
-                 time_dimension, enable_augment, stride_us, label_map):
+                 time_dimension, enable_augment, stride_us, label_map,
+                 t_squash_factor, target_width, target_height,
+                 min_events_per_window):
         """
         参数:
             data_root: 数据根目录，包含各个动作类别的子文件夹
@@ -30,175 +32,147 @@ class ESequenceDataset(Dataset):
         
         self.data_root = data_root
         self.window_size_us = window_size_us
-        self.stride_us = stride_us if stride_us is not None else window_size_us // 2
+        self.stride_us = stride_us
         self.max_points = max_points
         self.time_dimension = time_dimension
         self.enable_augment = enable_augment
+        self.t_squash_factor = t_squash_factor  # 每t_squash_factor微秒内的时间戳表示成一个时间戳
+        self.target_width, self.target_height = target_width, target_height  # 目标空间坐标大小 # 原始宽度和高度为346和260
+        self.min_events_per_window = min_events_per_window  # 一个时间窗口中最小事件数阈值
 
         # 处理事件数据的一些参数设置
-        self.t_squash_factor = 10000  # 每10毫秒内的时间戳表示成一个时间戳
-        self.target_width, self.target_height = 128, 96  # 目标空间坐标大小
-        self.min_events_per_window = 4000  # 一个时间窗口中最小事件数阈值
         self.padpoints_noise_scale = 0.02  # 填充点的噪声尺度
         
         # 收集所有文件路径和初始标签
-        initial_samples = []
-        for cls_name, idx in label_map.items():
-            class_dir = os.path.join(data_root, cls_name)
-            files = glob.glob(os.path.join(class_dir, "*.npy"))
-            for file_path in files:
-                initial_samples.append((file_path, idx))
-            print(f"[DEBUG] Found {len(files)} files in class {cls_name}")
-        
-        print(f"找到了来自{len(label_map)}个类别的{len(initial_samples)}个原始文件")
-        
-        # 应用滑动窗口处理，生成最终样本列表
         self.samples = []
         total_windows = 0
         start_time1 = time.time()
-        for file_path, label in initial_samples:
-            events = np.load(file_path)
-            # print(f"[DEBUG] Loaded events shape: {events.shape}, label: {label}, time range: [{events[:, 0].min()}, {events[:, 0].max()}] us")
-            # 检查事件数组是否为空
-            if events.size == 0 or events.shape[0] == 0:
-                print(f"警告: 文件 {file_path} 包含空的事件数组，跳过处理")
-                continue
+        for cls_name, idx in label_map.items():
+            class_dir = os.path.join(data_root, cls_name)
+            files = glob.glob(os.path.join(class_dir, "*.npy"))
+            for file_path in files:     
+                events = np.load(file_path)
+                print(f"[DEBUG] Loaded events shape: {events.shape}, label: {idx}, time range: [{events[:, 0].min()}, {events[:, 0].max()}] us")
+                # 检查事件数组是否为空
+                if events.size == 0 or events.shape[0] == 0:
+                    print(f"警告: 文件 {file_path} 包含空的事件数组，跳过处理")
+                    continue
 
-            # 时间戳转换成微秒
-            if events[:, 0].dtype == np.int64:  # Check if timestamps are likely in Unix format
-                min_timestamp = events[:, 0].min()
-                events[:, 0] = events[:, 0] - min_timestamp
+                t, x, y, p = events[:, 0], events[:, 1], events[:, 2], events[:, 3]
+                # 时间戳转换成微秒
+                if t.dtype != np.int64:  # Check if timestamps are likely in Unix format
+                    print(f"[ERROR] 时间戳格式错误，期望为整数类型，实际为 {t.dtype}")
+                else:     
+                    min_timestamp = t.min()
+                    t = t - min_timestamp
+                # 时间戳等比例压缩 Group events in 10ms windows and assigning average timestamp
+                time_bins = (t // self.t_squash_factor).astype(np.int64)
+                unique_bins = np.unique(time_bins)
+                for bin_idx in unique_bins:
+                    bin_mask = time_bins == bin_idx
+                    if np.sum(bin_mask) > 0:
+                        bin_avg_time = np.mean(t[bin_mask]).astype(np.int64)
+                        t[bin_mask] = bin_avg_time
+                # print(f"[DEBUG] After time squashing, unique timestamps: {len(np.unique(events[:, 0]))}/{len(events)}")
+                # 空间坐标xy缩放到指定大小
+                original_width, original_height = 346, 260  
+                width_scale = self.target_width / original_width
+                height_scale = self.target_height / original_height
+                x = np.clip(x * width_scale, 0, self.target_width - 1)
+                y = np.clip(y * height_scale, 0, self.target_height - 1)
+                # 通过合并时间戳和空间坐标相同的事件降采样
+                event_keys = {}
+                merged_events = []
+                for i in range(len(t)):
+                    key = (t[i], int(x[i]), int(y[i]))  # 创建(t,x,y)元组作为键
+                    if key not in event_keys:
+                        event_keys[key] = [0, 0]  # [p=0计数, p=1计数]
+                    if p[i] == 0:
+                        event_keys[key][0] += 1
+                    else:
+                        event_keys[key][1] += 1
+                for key, counts in event_keys.items():
+                    t_val, x_val, y_val = key
+                    p_val = 1 if counts[1] >= counts[0] else 0
+                    merged_events.append([t_val, x_val, y_val, p_val])
                 
-            # 时间戳等比例压缩 Group events in 10ms windows and assigning average timestamp
-            time_bins = (events[:, 0] // self.t_squash_factor).astype(np.int64)
-            unique_bins = np.unique(time_bins)
-            for bin_idx in unique_bins:
-                bin_mask = time_bins == bin_idx
-                if np.sum(bin_mask) > 0:
-                    bin_avg_time = np.mean(events[bin_mask, 0]).astype(np.int64)
-                    events[bin_mask, 0] = bin_avg_time
-            # print(f"[DEBUG] After time squashing, unique timestamps: {len(np.unique(events[:, 0]))}/{len(events)}")
-            # 修改事件维度：将4维事件转换为5维，第4和5维分别表示p=0和p=1的计数
-            new_events = np.zeros((len(events), 5), dtype=events.dtype)
-            new_events[:, :3] = events[:, :3]
-            new_events[:, 3] = (events[:, 3] == 1).astype(np.int64)  # p=1的个数
-            new_events[:, 4] = (events[:, 3] == 0).astype(np.int64)  # p=0的个数
-            events = new_events
-            # 空间坐标xy缩放到指定大小
-            original_width, original_height = 346, 260  # 原始宽度和高度为346和260
-            width_scale = self.target_width / original_width
-            height_scale = self.target_height / original_height
-            events[:, 1] = np.clip(events[:, 1] * width_scale, 0, self.target_width - 1)
-            events[:, 2] = np.clip(events[:, 2] * height_scale, 0, self.target_height - 1)
-            # 合并时间戳和空间坐标相同的事件，累加极性计数
-            merged_events_dict = {}
-            for event in events:
-                key = (event[0], event[1], event[2])
-                if key in merged_events_dict:
-                    merged_events_dict[key][3] += event[3]  # p=1的计数
-                    merged_events_dict[key][4] += event[4]  # p=0的计数
-                else:
-                    merged_events_dict[key] = event.copy()
-            events = np.array(list(merged_events_dict.values()))
-            # print(f"[DEBUG] After merging: {len(events)} unique events)")
-            
-            # 【可选】打印前100个事件
-            # num_events_to_print = min(1000, len(events))
-            # print(f"[DEBUG] First {num_events_to_print} events:")
-            # for i in range(num_events_to_print):
-            #     print(f"  Event {i}: t={events[i, 0]:.1f}, x={events[i, 1]}, y={events[i, 2]}, p1={events[i, 3]}, p0={events[i, 4]}")
-            # # 【可选】打印20个事件：第一个为最小时间戳，最后一个为最大时间戳，中间18个随机选取并按时间排序
-            # min_time_idx = np.argmin(events[:, 0])
-            # max_time_idx = np.argmax(events[:, 0])
-            # remaining_indices = np.array([i for i in range(len(events)) if i != min_time_idx and i != max_time_idx])
-            # if len(remaining_indices) > 18:
-            #     random_indices = np.random.choice(remaining_indices, 18, replace=False)
-            # else:
-            #     random_indices = remaining_indices
-            # sample_indices = np.concatenate([[min_time_idx], random_indices, [max_time_idx]])
-            # sample_events = events[sample_indices]
-            # sorted_indices = np.argsort(sample_events[:, 0])
-            # sample_events = sample_events[sorted_indices]
-            # print(f"[DEBUG] show 20 events [after timestamps processing]: {sample_events}")
-            
-            # 应用滑动窗口生成多个子序列
-            windows = self.sliding_window_events(events)
-            # print(f"[DEBUG] Generated {len(windows)} windows from file {file_path}")
-            
-            # 将每个窗口添加为单独的样本 以便在__getitem__中直接使用
-            for window_idx, window_events in enumerate(windows):
-                point_cloud = self.events_to_pointcloud(window_events) # 转换为PointNet++兼容的点云格式
-                point_cloud_tensor = torch.from_numpy(point_cloud).float()
-                self.samples.append((file_path, label, window_idx, point_cloud_tensor))
-            
-            total_windows += len(windows)
+                # 用合并后的事件替换原始事件数组
+                new_events = np.array(merged_events)
+                print(f"[DEBUG] After merging, events reduced from {len(t)} to {len(new_events)}")
+                # print(f"[DEBUG] After merging,  events time range: [{new_events[:, 0].min()}, {new_events[:, 0].max()}] us")
+                
+                
+                # 【可选】打印前100个事件
+                # num_events_to_print = min(1000, len(events))
+                # print(f"[DEBUG] First {num_events_to_print} events:")
+                # for i in range(num_events_to_print):
+                #     print(f"  Event {i}: t={events[i, 0]:.1f}, x={events[i, 1]}, y={events[i, 2]}, p1={events[i, 3]}, p0={events[i, 4]}")
+                # # 【可选】打印20个事件：第一个为最小时间戳，最后一个为最大时间戳，中间18个随机选取并按时间排序
+                # min_time_idx = np.argmin(events[:, 0])
+                # max_time_idx = np.argmax(events[:, 0])
+                # remaining_indices = np.array([i for i in range(len(events)) if i != min_time_idx and i != max_time_idx])
+                # if len(remaining_indices) > 18:
+                #     random_indices = np.random.choice(remaining_indices, 18, replace=False)
+                # else:
+                #     random_indices = remaining_indices
+                # sample_indices = np.concatenate([[min_time_idx], random_indices, [max_time_idx]])
+                # sample_events = events[sample_indices]
+                # sorted_indices = np.argsort(sample_events[:, 0])
+                # sample_events = sample_events[sorted_indices]
+                # print(f"[DEBUG] show 20 events [after timestamps processing]: {sample_events}")
+                
+                # 应用滑动窗口生成多个子序列
+                windows = self.sliding_window_events(new_events)
+                # print(f"[DEBUG] Generated {len(windows)} windows from file {file_path}")
+                
+                # 将每个窗口添加为单独的样本 以便在__getitem__中直接使用
+                for window_idx, window_events in enumerate(windows):
+                    point_cloud = self.events_to_pointcloud(window_events) # 转换为PointNet++兼容的点云格式
+                    point_cloud_tensor = torch.from_numpy(point_cloud).float()
+                    self.samples.append((file_path, idx, window_idx, point_cloud_tensor))
+                
+                total_windows += len(windows)
 
         end_time1 = time.time()
-        print(f"[DEBUG] Processed {len(initial_samples)} files in {end_time1 - start_time1:.2f} seconds")
-        print(f"使用滑动窗口处理后,共生成{total_windows}个训练样本")
+        print(f"[DEBUG] Processed time is {end_time1 - start_time1:.2f} seconds")
+        print(f"使用滑动窗口处理后,共生成{total_windows}个训练样本来自{len(label_map)}个类别的")
         
     def events_to_pointcloud(self, events):
-        """将事件数据转换为点云格式,适合PointNet++处理"""
-
-        # 如果事件数据太多,使用体素网格法进行降采样
-        if len(events) > self.max_points:
-            if len(events) < (self.max_points * 1.2):
-                indices = np.random.choice(len(events), self.max_points, replace=False)
-                events = events[indices]
-            else:
-                print(f"[DEBUG] Reducing events from {len(events)} to max_points={self.max_points} using voxel grid")
-                if len(events) < (self.max_points * 1.5):
-                    voxel_size_xy = 1.4
-                elif len(events) < (self.max_points * 2.0):
-                    voxel_size_xy = 1.7
-                elif len(events) < (self.max_points * 2.5):
-                    voxel_size_xy = 1.9
-                elif len(events) < (self.max_points * 3.0):
-                    voxel_size_xy = 2.1
-                else:
-                    voxel_size_xy = 2.2
-                voxel_size_t = self.t_squash_factor * voxel_size_xy  # 时间体素大小 (微秒)
-                spatial_temporal_hash = {}
-                reduced_events = []
-                for event in events:
-                    voxel_key = (
-                        int(event[1] // voxel_size_xy),  # x方向
-                        int(event[2] // voxel_size_xy),  # y方向
-                        int(event[0] // voxel_size_t)    # t方向
-                    )
-                    if voxel_key not in spatial_temporal_hash:
-                        spatial_temporal_hash[voxel_key] = event
-                        reduced_events.append(event)
-                # 如果体素网格后仍超过最大点数，继续使用随机采样
-                reduced_events = np.array(reduced_events)
-                if len(reduced_events) > self.max_points:
-                    print(f"[DEBUG] After voxel grid, still {len(reduced_events)} events, applying random sampling")
-                    indices = np.random.choice(len(reduced_events), self.max_points, replace=False)
-                    events = reduced_events[indices]
-                else:
-                    events = reduced_events
-        
+        """将事件数据转换为点云格式,适合PointNet++处理"""      
         # 构建点云
         if self.time_dimension:
-            # 使用时间作为z坐标，极性计数作为特征：[x, y, t, p1_count, p0_count]
-            # print(f"[DEBUG] Using time dimension, point cloud will have 5 features")
-            point_cloud = np.zeros((len(events), 5), dtype=np.float32)
-            point_cloud[:, 0] = events[:, 1]  # x坐标
-            point_cloud[:, 1] = events[:, 2]  # y坐标
-            point_cloud[:, 2] = events[:, 0]  # 时间戳作为z坐标
-            point_cloud[:, 3] = events[:, 3]  # p=1的计数
-            point_cloud[:, 4] = events[:, 4]  # p=0的计数
-        else:
-            # 仅使用空间坐标和极性计数：[x, y, p1_count, p0_count]
-            # print(f"[DEBUG] Not using time dimension, point cloud will have 4 features")
+            # 使用时间作为z坐标，极性计数作为特征：[t, x, y, p]
             point_cloud = np.zeros((len(events), 4), dtype=np.float32)
-            point_cloud[:, 0] = events[:, 1]  # x坐标
-            point_cloud[:, 1] = events[:, 2]  # y坐标
-            point_cloud[:, 2] = events[:, 3]  # p=1的计数
-            point_cloud[:, 3] = events[:, 4]  # p=0的计数
+            point_cloud[:, 0] = events[:, 0]  # t
+            point_cloud[:, 1] = events[:, 1]  # x
+            point_cloud[:, 2] = events[:, 2]  # y
+            point_cloud[:, 3] = events[:, 3]  # p
+        else:
+            # 仅使用空间坐标和极性：[x, y, p]
+            point_cloud = np.zeros((len(events), 4), dtype=np.float32)
+            point_cloud[:, 0] = events[:, 1]  # x
+            point_cloud[:, 1] = events[:, 2]  # y
+            point_cloud[:, 2] = events[:, 3]  # p
+        
+        # 降采样到固定大小 (如果点数超过max_points)
+        if len(point_cloud) > self.max_points:
+            # print(f"[DEBUG] Downsampling from {len(point_cloud)} points to {self.max_points}")
+            if self.time_dimension:
+                # 1. 按时间排序
+                time_sorted_indices = np.argsort(point_cloud[:, 0])
+                sorted_point_cloud = point_cloud[time_sorted_indices]
+                # 2. 系统采样：每隔n个点取一个点，确保时间分布均匀
+                step = len(sorted_point_cloud) / self.max_points
+                indices = np.floor(np.arange(0, len(sorted_point_cloud), step)).astype(int)
+                indices = indices[:self.max_points]  # 确保不超过max_points
+                point_cloud = sorted_point_cloud[indices]
+            else:
+                # 随机采样 - 对于没有时间维度的情况
+                random_indices = np.random.choice(len(point_cloud), self.max_points, replace=False)
+                point_cloud = point_cloud[random_indices]
         
         # 填充到固定大小 (如果点数不足max_points)
-        if len(point_cloud) < self.max_points:
+        elif len(point_cloud) < self.max_points:
             pad_count = self.max_points - len(point_cloud)
             print(f"[DEBUG] Padding with {pad_count} additional points")
             # 创建填充点 (在现有点的基础上添加小随机偏移)
@@ -212,10 +186,10 @@ class ESequenceDataset(Dataset):
                     indices = np.random.choice(len(point_cloud), pad_count, replace=True)
                 
                 pad_points = point_cloud[indices].copy()
-                # 只对坐标添加噪声 小随机偏移以增加多样性，不修改极性计数
-                if self.time_dimension:  # 5维特征: [x, y, t, p1, p0]
+                # 只对坐标添加噪声 小随机偏移以增加多样性，不修改极性
+                if self.time_dimension:  # 4维特征: [t, x, y, p]
                     pad_points[:, :3] += np.random.normal(0, self.padpoints_noise_scale, (pad_count, 3))
-                else:  # 4维特征: [x, y, p1, p0]
+                else:  # 4维特征: [x, y, p, ...]
                     pad_points[:, :2] += np.random.normal(0, self.padpoints_noise_scale, (pad_count, 2))
                 
                 point_cloud = np.vstack([point_cloud, pad_points])
@@ -223,11 +197,14 @@ class ESequenceDataset(Dataset):
                 # 如果没有点，创建随机但有意义的点云
                 print(f"[DEBUG] No points available, creating synthetic point cloud")
                 point_cloud = np.zeros((self.max_points, point_cloud.shape[1]), dtype=np.float32)
-                point_cloud[:, 0] = np.random.uniform(0, self.target_width - 1, self.max_points)  # x坐标
-                point_cloud[:, 1] = np.random.uniform(0, self.target_height - 1, self.max_points)  # y坐标
                 if self.time_dimension:
-                    point_cloud[:, 2] = np.sort(np.random.uniform(0, self.window_size_us, self.max_points))
-                point_cloud[:, -2:] = np.random.randint(0, 1, (self.max_points, 2))
+                    point_cloud[:, 1] = np.random.uniform(0, self.target_width - 1, self.max_points)  # x
+                    point_cloud[:, 2] = np.random.uniform(0, self.target_height - 1, self.max_points)  # y
+                    point_cloud[:, 0] = np.sort(np.random.uniform(0, 1, self.max_points))  # t
+                else:
+                    point_cloud[:, 0] = np.random.uniform(0, self.target_width - 1, self.max_points) # x
+                    point_cloud[:, 1] = np.random.uniform(0, self.target_height - 1, self.max_points)  # y
+                point_cloud[:, -1] = np.random.randint(0, 2, self.max_points)
         
         return point_cloud
     
@@ -308,8 +285,7 @@ class ESequenceDataset(Dataset):
             window_events = events[mask]
             
             # 只有当窗口内有足够事件时才保留
-            total_events = np.sum(window_events[:, 3:5])  # 累加p=1和p=0的计数
-            if total_events >= self.min_events_per_window:
+            if len(window_events) >= self.min_events_per_window:
                 windows.append(window_events)
                 window_count += 1
                 # print(f"[DEBUG] Window {window_count}: start={start_time}, events={len(window_events)}")
@@ -322,6 +298,29 @@ class ESequenceDataset(Dataset):
             # print(f"[DEBUG] No valid windows found, using entire sequence")
             windows.append(events)
         
+        # 对窗口内的时间戳进行归一化处理
+        normalized_windows = []
+        windows_t_min = min([window[:, 0].min() for window in windows if len(window) > 0])
+        windows_t_max = max([window[:, 0].max() for window in windows if len(window) > 0])
+        # print(f"windows_t_max: {windows_t_max}")
+        # print(f"windows_t_min: {windows_t_min}")
+        for window in windows:
+            if len(window) > 0:
+                # 深拷贝窗口数据以避免修改原始数据
+                normalized_window = window.copy()
+                # Convert time values to float
+                normalized_window = normalized_window.astype(np.float32)
+                normalized_window[:, 0] = ((normalized_window[:, 0] - windows_t_min) / (windows_t_max - windows_t_min))
+                # print(f"normalized_window[:, 0]: {normalized_window[:, 0]}")
+                # print(f"normalized_window[:, 0] type: {normalized_window[:, 0].dtype}")
+                normalized_windows.append(normalized_window)
+            else:
+                normalized_windows.append(window)
+        windows = normalized_windows
+        # print(f"[DEBUG] After sliding_window_events,  events time range: "
+        #       f"{min([window[:, 0].min() for window in windows if len(window) > 0])} us, "
+        #       f"{max([window[:, 0].max() for window in windows if len(window) > 0])} us")
+
         return windows
 
     def __len__(self):
@@ -345,19 +344,23 @@ if __name__ == '__main__':
     # 测试数据集
     ds_cfg = cfg['dataset']
     data_ds = ESequenceDataset(
-        data_root          = ds_cfg['train_dir'],
+        data_root          = ds_cfg['val_dir'],
         window_size_us     = ds_cfg['window_size_us'],
         stride_us          = ds_cfg['stride_us'],
         max_points         = ds_cfg['max_points'],
         time_dimension     = ds_cfg['time_dimension'],
         enable_augment     = ds_cfg['enable_augment'],
-        label_map          = ds_cfg['label_map']
+        label_map          = ds_cfg['label_map'],
+        t_squash_factor    = ds_cfg['t_squash_factor'],
+        target_width       = ds_cfg['target_width'],
+        target_height      = ds_cfg['target_height'],
+        min_events_per_window = ds_cfg['min_events_per_window']
     )
     
     # 保存处理后的数据集到文件
     save_dir = "preprocessing_data"
     os.makedirs(save_dir, exist_ok=True)
-    save_path = os.path.join(save_dir, "train_dataset10.pkl")
+    save_path = os.path.join(save_dir, "val_dataset10_eseq.pkl")
     with open(save_path, 'wb') as f:
         pickle.dump(data_ds, f)
 
@@ -371,10 +374,12 @@ if __name__ == '__main__':
         sample_idx = random.randint(0, len(loaded_ds)-1)
         sample_data, sample_label = loaded_ds[sample_idx]
         print(f"\n随机样本 #{sample_idx}:")
-        print(f"  - 形状: {sample_data.shape}")
+        print(f"  - 形状: {sample_data.shape}") # torch.float32
         print(f"  - 标签: {sample_label}")
-        print(f"  - 点云范围: x[{sample_data[:, 0].min():.2f}, {sample_data[:, 0].max():.2f}], "
-              f"y[{sample_data[:, 1].min():.2f}, {sample_data[:, 1].max():.2f}]")
+        print(f"  - 点云范围: 0[{sample_data[:, 0].min()}, {sample_data[:, 0].max()}], "
+              f"1[{sample_data[:, 1].min()}, {sample_data[:, 1].max()}], "
+              f"2[{sample_data[:, 2].min()}, {sample_data[:, 2].max()}], "
+              f"3[{sample_data[:, 3].min()}, {sample_data[:, 3].max()}]")
         
         file_size_mb = os.path.getsize(save_path) / (1024 * 1024)
         print(f"\n数据集文件大小: {file_size_mb:.2f} MB")
