@@ -65,14 +65,17 @@ if __name__ == "__main__":
     # origin_data_path = "/home/qiangubuntu/research/har_rgbe/utils/origin_data/origin_data_rgb"
     # origin_data_path = "/home/qiangubuntu/research/har_rgbe/utils/origin_data/origin_data_rgbd"
     # origin_data_path = "/home/qiangubuntu/research/har_rgbe/utils/origin_data/origin_data_event"
-    origin_data_path = "utils/origin_data/eventcsv_categorize"
+    # origin_data_path = "utils/origin_data/eventcsv_categorize/0428_6"
+    origin_data_path = "utils/origin_data/eventcsv_categorize/0628_8"
     if not os.path.exists(origin_data_path):
         raise FileNotFoundError(f"Origin data path '{origin_data_path}' does not exist.")
+    
     # output_path = "/home/qiangubuntu/research/har_rgbe/utils/train_data/rgbe"
     # output_path = "/home/qiangubuntu/research/har_rgbe/utils/train_data/rgb"
     # output_path = "/home/qiangubuntu/research/har_rgbe/utils/train_data/rgbd"
     # output_path = "/home/qiangubuntu/research/har_rgbe/utils/train_data/event"
-    output_path = "utils/train_data/event_csv"
+    # output_path = "utils/train_data/event_csv/0428_6"
+    output_path = "utils/train_data/event_csv/0628_8"
     if not os.path.exists(output_path):
         raise FileNotFoundError(f"Output path '{output_path}' does not exist.")
     split_dataset(origin_data_path, output_path)

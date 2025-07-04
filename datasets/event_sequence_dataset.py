@@ -52,7 +52,7 @@ class ESequenceDataset(Dataset):
             files = glob.glob(os.path.join(class_dir, "*.npy"))
             for file_path in files:     
                 events = np.load(file_path)
-                print(f"[DEBUG] Loaded events shape: {events.shape}, label: {idx}, time range: [{events[:, 0].min()}, {events[:, 0].max()}] us")
+                print(f"[DEBUG] Loaded events shape: {events.shape}, label: {cls_name}:{idx}, time range: [{events[:, 0].min()}, {events[:, 0].max()}] us")
                 # 检查事件数组是否为空
                 if events.size == 0 or events.shape[0] == 0:
                     print(f"警告: 文件 {file_path} 包含空的事件数组，跳过处理")
