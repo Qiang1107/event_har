@@ -1,0 +1,282 @@
+ -----General Configuration------
+ Epochs: 30
+ Train batch size: 8
+ Validation batch size: 8
+ Test batch size: 8
+ learning rate: 0.00025
+ weight decay: 1e-2
+ Model type: pointnet2
+ ------Pointnet2 Model Configuration------
+ Loaded training data from: preprocessing_data/train_data_0428_6_ecount_3.pkl
+ Pointnet2 Model: {'num_classes': 6, 'normal_channel': False, 'input_dim': 4}
+ window_size_event_count: 32768
+ step_size: 4096
+
+[Epoch 1/30]
+Train Loss: 1.6313
+Training statistics: 9741 samples in 1218 batches
+Training time: 36.97 seconds
+Val Loss: 1.3938, Val Acc: 0.4536
+Validation statistics: 2996 samples in 375 batches
+Validation time: 13.01 seconds
+
+[Epoch 2/30]
+Train Loss: 1.3918
+Training statistics: 9741 samples in 1218 batches
+Training time: 37.01 seconds
+Val Loss: 1.2267, Val Acc: 0.5113
+Validation statistics: 2996 samples in 375 batches
+Validation time: 16.81 seconds
+
+[Epoch 3/30]
+Train Loss: 1.0695
+Training statistics: 9741 samples in 1218 batches
+Training time: 39.92 seconds
+Val Loss: 0.7711, Val Acc: 0.7323
+Validation statistics: 2996 samples in 375 batches
+Validation time: 13.39 seconds
+
+[Epoch 4/30]
+Train Loss: 0.7852
+Training statistics: 9741 samples in 1218 batches
+Training time: 39.09 seconds
+Val Loss: 0.7152, Val Acc: 0.7203
+Validation statistics: 2996 samples in 375 batches
+Validation time: 12.96 seconds
+
+[Epoch 5/30]
+Train Loss: 0.6330
+Training statistics: 9741 samples in 1218 batches
+Training time: 38.44 seconds
+Val Loss: 0.6055, Val Acc: 0.7690
+Validation statistics: 2996 samples in 375 batches
+Validation time: 11.45 seconds
+
+[Epoch 6/30]
+Train Loss: 0.5495
+Training statistics: 9741 samples in 1218 batches
+Training time: 32.85 seconds
+Val Loss: 0.5364, Val Acc: 0.7924
+Validation statistics: 2996 samples in 375 batches
+Validation time: 15.62 seconds
+
+[Epoch 7/30]
+Train Loss: 0.4907
+Training statistics: 9741 samples in 1218 batches
+Training time: 39.52 seconds
+Val Loss: 0.4563, Val Acc: 0.8311
+Validation statistics: 2996 samples in 375 batches
+Validation time: 16.22 seconds
+
+[Epoch 8/30]
+Train Loss: 0.4150
+Training statistics: 9741 samples in 1218 batches
+Training time: 37.79 seconds
+Val Loss: 0.4732, Val Acc: 0.8204
+Validation statistics: 2996 samples in 375 batches
+Validation time: 11.47 seconds
+
+[Epoch 9/30]
+Train Loss: 0.3779
+Training statistics: 9741 samples in 1218 batches
+Training time: 38.08 seconds
+Val Loss: 0.4254, Val Acc: 0.8611
+Validation statistics: 2996 samples in 375 batches
+Validation time: 15.02 seconds
+
+[Epoch 10/30]
+Train Loss: 0.3332
+Training statistics: 9741 samples in 1218 batches
+Training time: 38.97 seconds
+Val Loss: 0.3967, Val Acc: 0.8521
+Validation statistics: 2996 samples in 375 batches
+Validation time: 13.24 seconds
+
+[Epoch 11/30]
+Train Loss: 0.3027
+Training statistics: 9741 samples in 1218 batches
+Training time: 38.85 seconds
+Val Loss: 0.4029, Val Acc: 0.8515
+Validation statistics: 2996 samples in 375 batches
+Validation time: 14.71 seconds
+
+[Epoch 12/30]
+Train Loss: 0.2816
+Training statistics: 9741 samples in 1218 batches
+Training time: 38.35 seconds
+Val Loss: 0.4093, Val Acc: 0.8551
+Validation statistics: 2996 samples in 375 batches
+Validation time: 15.54 seconds
+
+[Epoch 13/30]
+Train Loss: 0.2692
+Training statistics: 9741 samples in 1218 batches
+Training time: 36.73 seconds
+Val Loss: 0.3925, Val Acc: 0.8638
+Validation statistics: 2996 samples in 375 batches
+Validation time: 15.05 seconds
+
+[Epoch 14/30]
+Train Loss: 0.2382
+Training statistics: 9741 samples in 1218 batches
+Training time: 38.31 seconds
+Val Loss: 0.3420, Val Acc: 0.8875
+Validation statistics: 2996 samples in 375 batches
+Validation time: 12.42 seconds
+
+[Epoch 15/30]
+Train Loss: 0.2299
+Training statistics: 9741 samples in 1218 batches
+Training time: 36.45 seconds
+Val Loss: 0.3679, Val Acc: 0.8788
+Validation statistics: 2996 samples in 375 batches
+Validation time: 14.14 seconds
+
+[Epoch 16/30]
+Train Loss: 0.2138
+Training statistics: 9741 samples in 1218 batches
+Training time: 36.37 seconds
+Val Loss: 0.3614, Val Acc: 0.8802
+Validation statistics: 2996 samples in 375 batches
+Validation time: 13.54 seconds
+
+[Epoch 17/30]
+Train Loss: 0.2072
+Training statistics: 9741 samples in 1218 batches
+Training time: 36.57 seconds
+Val Loss: 0.3925, Val Acc: 0.8531
+Validation statistics: 2996 samples in 375 batches
+Validation time: 15.24 seconds
+
+[Epoch 18/30]
+Train Loss: 0.1867
+Training statistics: 9741 samples in 1218 batches
+Training time: 35.85 seconds
+Val Loss: 0.3731, Val Acc: 0.8708
+Validation statistics: 2996 samples in 375 batches
+Validation time: 12.37 seconds
+
+[Epoch 19/30]
+Train Loss: 0.1692
+Training statistics: 9741 samples in 1218 batches
+Training time: 37.84 seconds
+Val Loss: 0.4045, Val Acc: 0.8652
+Validation statistics: 2996 samples in 375 batches
+Validation time: 16.20 seconds
+
+[Epoch 20/30]
+Train Loss: 0.1654
+Training statistics: 9741 samples in 1218 batches
+Training time: 35.33 seconds
+Val Loss: 0.3243, Val Acc: 0.8965
+Validation statistics: 2996 samples in 375 batches
+Validation time: 13.14 seconds
+
+[Epoch 21/30]
+Train Loss: 0.1741
+Training statistics: 9741 samples in 1218 batches
+Training time: 37.33 seconds
+Val Loss: 0.3520, Val Acc: 0.8745
+Validation statistics: 2996 samples in 375 batches
+Validation time: 11.91 seconds
+
+[Epoch 22/30]
+Train Loss: 0.1408
+Training statistics: 9741 samples in 1218 batches
+Training time: 37.73 seconds
+Val Loss: 0.3537, Val Acc: 0.8762
+Validation statistics: 2996 samples in 375 batches
+Validation time: 16.11 seconds
+
+[Epoch 23/30]
+Train Loss: 0.1523
+Training statistics: 9741 samples in 1218 batches
+Training time: 39.13 seconds
+Val Loss: 0.3379, Val Acc: 0.8875
+Validation statistics: 2996 samples in 375 batches
+Validation time: 14.45 seconds
+
+[Epoch 24/30]
+Train Loss: 0.1352
+Training statistics: 9741 samples in 1218 batches
+Training time: 39.43 seconds
+Val Loss: 0.3226, Val Acc: 0.9032
+Validation statistics: 2996 samples in 375 batches
+Validation time: 14.13 seconds
+
+[Epoch 25/30]
+Train Loss: 0.1314
+Training statistics: 9741 samples in 1218 batches
+Training time: 37.51 seconds
+Val Loss: 0.3605, Val Acc: 0.8822
+Validation statistics: 2996 samples in 375 batches
+Validation time: 15.50 seconds
+
+[Epoch 26/30]
+Train Loss: 0.1354
+Training statistics: 9741 samples in 1218 batches
+Training time: 38.43 seconds
+Val Loss: 0.3775, Val Acc: 0.8745
+Validation statistics: 2996 samples in 375 batches
+Validation time: 14.98 seconds
+
+[Epoch 27/30]
+Train Loss: 0.1271
+Training statistics: 9741 samples in 1218 batches
+Training time: 35.84 seconds
+Val Loss: 0.3833, Val Acc: 0.8678
+Validation statistics: 2996 samples in 375 batches
+Validation time: 12.28 seconds
+
+[Epoch 28/30]
+Train Loss: 0.1119
+Training statistics: 9741 samples in 1218 batches
+Training time: 36.48 seconds
+Val Loss: 0.3789, Val Acc: 0.8825
+Validation statistics: 2996 samples in 375 batches
+Validation time: 13.80 seconds
+
+[Epoch 29/30]
+Train Loss: 0.1207
+Training statistics: 9741 samples in 1218 batches
+Training time: 37.96 seconds
+Val Loss: 0.3186, Val Acc: 0.8985
+Validation statistics: 2996 samples in 375 batches
+Validation time: 14.51 seconds
+
+[Epoch 30/30]
+Train Loss: 0.1092
+Training statistics: 9741 samples in 1218 batches
+Training time: 38.41 seconds
+Val Loss: 0.3959, Val Acc: 0.8778
+Validation statistics: 2996 samples in 375 batches
+Validation time: 16.30 seconds
+
+[Test with best model from results/checkpoints/pointnet2_event_0428_6_ecount_3.pth]
+Test statistics: 3188 samples in 399 batches
+Test time: 16.14 seconds
+Best validation accuracy: 0.9032042723631508
+Test Acc: 0.8102 (2583/3188)
+Per-class accuracy:
+Approach: 0.9298 (265/285)
+Pick_and_Place_Bolt: 0.4657 (326/700)
+Pick_and_Place_Cover: 0.9454 (727/769)
+Pick_and_Place_Screwdriver: 0.8457 (663/784)
+Screw: 0.9405 (237/252)
+Transition: 0.9171 (365/398)
+
+Confusion Matrix:
+265,0,0,0,0,20
+0,326,187,166,20,1
+0,35,727,7,0,0
+2,84,24,663,4,7
+0,5,4,5,237,1
+20,0,0,13,0,365
+
+Normalized Confusion Matrix:
+0.93,0.00,0.00,0.00,0.00,0.07
+0.00,0.47,0.27,0.24,0.03,0.00
+0.00,0.05,0.95,0.01,0.00,0.00
+0.00,0.11,0.03,0.85,0.01,0.01
+0.00,0.02,0.02,0.02,0.94,0.00
+0.05,0.00,0.00,0.03,0.00,0.92

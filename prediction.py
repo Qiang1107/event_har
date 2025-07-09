@@ -6,6 +6,10 @@ import torch.nn as nn
 import tqdm
 import pickle
 import sys
+from sklearn.metrics import confusion_matrix
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
 
 
 sys.path.append(os.path.dirname(__file__))
@@ -111,12 +115,21 @@ def main(config_path, premodel_path, log_path):
             class_correct[class_name] = 0
             class_total[class_name] = 0
         test_start_time = time.time()
+
+        # 收集所有预测和真实标签用于混淆矩阵
+        all_preds = []
+        all_labels = []
+
         with torch.no_grad():
             for imgs, labels in tqdm.tqdm(test_loader):
                 imgs = imgs.float().to(device)
                 labels = labels.to(device)
                 logits = model(imgs)
                 preds = logits.argmax(dim=1)
+
+                # 保存预测和标签用于混淆矩阵
+                all_preds.extend(preds.cpu().numpy())
+                all_labels.extend(labels.cpu().numpy())
 
                 # Update per-class statistics
                 for i in range(len(labels)):
@@ -156,6 +169,51 @@ def main(config_path, premodel_path, log_path):
                 else:
                     print(f"{class_name}: N/A (0/0)")
                     f.write(f"{class_name}: N/A (0/0)\n")
+        
+        # 计算混淆矩阵
+        cm = confusion_matrix(all_labels, all_preds)
+        plt.figure(figsize=(10, 8))
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                    xticklabels=class_names, 
+                    yticklabels=class_names)
+        plt.xlabel('Predicted')
+        plt.ylabel('True')
+        plt.title('Confusion Matrix')
+        
+        # 保存混淆矩阵图像
+        os.makedirs(cfg['fig_dir'], exist_ok=True)
+        best_model_filename = os.path.basename(premodel_path).split('.')[0]
+        confusion_matrix_path = os.path.join(cfg['fig_dir'], f"{best_model_filename}_confusion_matrix_{idx}.png")
+        plt.tight_layout()
+        plt.savefig(confusion_matrix_path)
+        print(f"Confusion matrix saved to {confusion_matrix_path}")
+        
+        # 计算归一化混淆矩阵（按行归一化，显示每个类别的召回率分布）
+        cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        plt.figure(figsize=(10, 8))
+        sns.heatmap(cm_normalized, annot=True, fmt='.2f', cmap='Blues', 
+                    xticklabels=class_names, 
+                    yticklabels=class_names)
+        plt.xlabel('Predicted')
+        plt.ylabel('True')
+        plt.title('Normalized Confusion Matrix')
+        
+        # 保存归一化混淆矩阵
+        norm_confusion_matrix_path = os.path.join(cfg['fig_dir'], f"{best_model_filename}_norm_confusion_matrix_{idx}.png")
+        plt.tight_layout()
+        plt.savefig(norm_confusion_matrix_path)
+        print(f"Normalized confusion matrix saved to {norm_confusion_matrix_path}")
+
+        # 将混淆矩阵输出到控制台和日志文件
+        print("\nConfusion Matrix:")
+        print(cm)
+        print("\nNormalized Confusion Matrix:")
+        print(cm_normalized)
+        with open(log_path, 'a') as f:
+            f.write("\nConfusion Matrix:\n")
+            np.savetxt(f, cm, fmt='%d', delimiter=',')
+            f.write("\nNormalized Confusion Matrix:\n")
+            np.savetxt(f, cm_normalized, fmt='%.2f', delimiter=',')
 
 if __name__ == '__main__':
     import argparse

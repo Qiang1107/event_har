@@ -1,6 +1,9 @@
 data/
 results/0527/
 results/0610/
+results/0619/
+results/0704/
+results/checkpoints/
 **/__pycache__
 *.log
 *.pkl

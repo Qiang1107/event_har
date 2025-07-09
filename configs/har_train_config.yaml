@@ -7,7 +7,7 @@ dataset:
   val_dir:   data/val
   test_dir:  data/test
 
-  # label_map:
+  # label_map: # 12
   #   Align_screwdriver:     0
   #   Approach:              1
   #   Idle:                  2
@@ -21,17 +21,35 @@ dataset:
   #   Screw:                10
   #   Transition:           11
 
-  label_map:
-    Align_screwdriver:     0
-    Approach:              1
-    Pick_bolt:             2
-    Pick_cover:            3
-    Pick_screwdriver:      4
-    Place_bolt:            5
-    Place_cover:           6
-    Put_down_screwdriver:  7
-    Screw:                 8
-    Transition:            9
+  # label_map: # 10
+  #   Align_screwdriver:     0
+  #   Approach:              1
+  #   Pick_bolt:             2
+  #   Pick_cover:            3
+  #   Pick_screwdriver:      4
+  #   Place_bolt:            5
+  #   Place_cover:           6
+  #   Put_down_screwdriver:  7
+  #   Screw:                 8
+  #   Transition:            9
+
+  # label_map: # 0428 6种
+  #   Approach:                    0
+  #   Pick_and_Place_Bolt:         1
+  #   Pick_and_Place_Cover:        2
+  #   Pick_and_Place_Screwdriver:  3
+  #   Screw:                       4
+  #   Transition:                  5
+
+  label_map: # 0628 8种
+    Approach:                    0
+    Pick_and_Place_Bolt:         1
+    Pick_and_Place_Cover:        2
+    Pick_and_Place_Part1_Small:  3
+    Pick_and_Place_Part2_Big:    4
+    Pick_and_Place_Screwdriver:  5
+    Screw:                       6
+    Transition:                  7
 
   window_size:             9 # 定长帧数
   stride:                  3 # 滑动步长
@@ -47,8 +65,8 @@ dataset:
   target_height:           260     # 目标图像高度 260 192 96
   min_events_per_window:   4000    # 一个时间窗口中最小事件数阈值
 
-  window_size_event_count: 8192  # 窗口包含的事件数
-  step_size:               1024  # 滑动窗口步长（事件数）
+  window_size_event_count: 32768  # 窗口包含的事件数,可选: 8192, 16384, 32768
+  step_size:               4096  # 滑动窗口步长（事件数）可选: 1024, 2048, 4096, 8192
   # 如果为true，则输入维度为4（x, y, z, t），否则为3（x, y, z）
 
 
@@ -57,20 +75,20 @@ train:
   # ---------------------------------------
   # 32 for vit, 16 for cnn, 128 for pointnet2 in server
   # 32 or 16 for pointnet2msg in server
-  batch_size:   16
+  batch_size:   32
   # ---------------------------------------
   num_workers:  0     # 子进程加载训练数据
   shuffle:      true
 
 val:
   # ---------------------------------------
-  batch_size:   16
+  batch_size:   32
   # ---------------------------------------
   num_workers:  0     
   shuffle:      false
 
 test:
-  batch_size:   8
+  batch_size:   16
   num_workers:  0    
   shuffle:      false
 
@@ -128,22 +146,23 @@ cnn_model:
 
 # ===== pointnet2模型配置 =====
 pointnet2_model:
-  num_classes: 10
-  normal_channel: False  # 事件数据没有法向量
-  input_dim: 4  # 5 当time_dimension=True时,4 当time_dimension=False # eventcout 处理时为4
+  num_classes: 8
+  normal_channel: True  # 事件数据没有法向量，相当于特征向量
+  input_dim: 4  # t, x, y, p
   
 
 
 # ===== 优化器 & 训练 =====
 optimizer:
   type:         AdamW # 可选：SGD / Adam / AdamW
-  lr:           0.00025 # 0.0001 or 2e-4 or 0.00025 or 0.01
+  lr:           0.0025 # 0.0001 or 2e-4 or 0.00025 or 0.01
   weight_decay: 1e-2 # 0.001 or 5e-3
 
-epochs:   30
+epochs:   20
 device:   cuda:0
 work_dir: results/checkpoints
 log_dir: results/logs
+fig_dir: results/figs
 # ---------------------------------------
-model_type: pointnet2msg  # options: cnn / vit / pointnet2 / pointnet2msg
+model_type: pointnet2  # options: cnn / vit / pointnet2 / pointnet2msg
 # ---------------------------------------
