@@ -51,23 +51,28 @@ dataset:
     Screw:                       6
     Transition:                  7
 
-  window_size:             9 # 定长帧数
-  stride:                  3 # 滑动步长
-  enable_transform:        true  # 是否启用数据变换
+  window_size:             9         # 定长帧数
+  stride:                  3         # 滑动步长
+  enable_transform:        true      # 是否启用数据变换
   
-  window_size_us:          333333  # 单位微秒us, (333333/1000000)* 30fps = 10帧
-  stride_us:               66666   # 单位微秒us, (66666/1000000)* 30fps = 2帧
-  max_points:              8192    # 点云最大点数 4096 8192
-  time_dimension:          true    # 是否使用时间维度
-  enable_augment:          false   # 是否启用数据增强
-  t_squash_factor:         3333   # 每t_squash_factor微秒内的时间戳表示成一个时间戳
-  target_width:            346     # 目标图像宽度 346 256 128
-  target_height:           260     # 目标图像高度 260 192 96
-  min_events_per_window:   4000    # 一个时间窗口中最小事件数阈值
+  window_size_us:          333333    # 单位微秒us, (333333/1000000)* 30fps = 10帧
+  stride_us:               66666     # 单位微秒us, (66666/1000000)* 30fps = 2帧
+  max_points:              8192      # 点云最大点数 4096 8192
+  time_dimension:          true      # 是否使用时间维度
+  enable_augment:          false     # 是否启用数据增强
+  t_squash_factor:         3333      # 每t_squash_factor微秒内的时间戳表示成一个时间戳
+  target_width:            346       # 目标图像宽度 346 256 128
+  target_height:           260       # 目标图像高度 260 192 96
+  min_events_per_window:   4000      # 一个时间窗口中最小事件数阈值
 
-  window_size_event_count: 32768  # 窗口包含的事件数,可选: 8192, 16384, 32768
-  step_size:               4096  # 滑动窗口步长（事件数）可选: 1024, 2048, 4096, 8192
-  # 如果为true，则输入维度为4（x, y, z, t），否则为3（x, y, z）
+  window_size_event_count: 32768     # 窗口包含的事件数,可选: 8192, 16384, 32768
+  step_size:               4096      # 滑动窗口步长（事件数）可选: 1024, 2048, 4096, 8192
+  denoise:                 true      # 是否执行降噪
+  denoise_method:          'voxel'   # 降噪方法: 'density', 'dbscan', 'voxel', 'histogram', 'random', 'temporal'
+  denoise_radius:          0.05      # 降噪搜索半径
+  voxel_size_txy:          [1000, 10, 10] # 体素大小 [t, x, y] 单位: 微秒 和 像素
+  min_neighbors:           5         # 最小邻居数量阈值
+  denoise_threshold:       0.2       # 密度阈值参数
 
 
 # ===== DataLoader 参数 =====
