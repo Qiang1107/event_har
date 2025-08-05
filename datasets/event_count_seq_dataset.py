@@ -104,7 +104,7 @@ def voxel_grid_filter(events, voxel_size_txy):
     t = events[:, 0].copy()  # 时间戳
     x = events[:, 1].copy()  # x坐标
     y = events[:, 2].copy()  # y坐标
-    print(f"维度范围 t: {(np.max(t) - np.min(t))/1000:.3f} ms")
+    print(f"维度范围 t: {(np.max(t) - np.min(t)):.2f} µs, {(np.max(t) - np.min(t))/1000:.2f} ms")
     
     # 计算体素索引 - 直接使用原始数据
     voxel_idx_t = np.floor((t - np.min(t)) / voxel_size_txy[0]).astype(int)
@@ -113,7 +113,7 @@ def voxel_grid_filter(events, voxel_size_txy):
     
     # 组合成体素索引
     voxel_indices = np.column_stack((voxel_idx_t, voxel_idx_x, voxel_idx_y))
-    print(f"体素voxel_indices shape: {voxel_indices.shape}, 参数voxel_size_txy={voxel_size_txy}")
+    print(f"体素voxel_indices shape: {voxel_indices.shape}")
     
     # 创建体素字典
     voxel_dict = {}
@@ -134,7 +134,8 @@ def voxel_grid_filter(events, voxel_size_txy):
     print(f"counts体素点数前10个: {counts[:10]}")
     
     # 设定阈值，低于此值的体素被视为噪声
-    threshold = max(2, int(np.mean(counts) * 0.1))
+    # threshold = max(2, int(np.mean(counts) * 0.1))
+    threshold = 2
     
     # 收集有效点的索引
     valid_indices = []
@@ -304,12 +305,13 @@ def temporal_consistency_filter(events, time_bins=100, spatial_bins=16, density_
 class ECountSeqDataset(Dataset):
     """事件序列数据集,将事件数据转换为适合PointNet++的点云格式"""
     def __init__(self, data_root, window_size_event_count, step_size, label_map,
-                 denoise=True, denoise_method='voxel', denoise_radius=0.05, 
-                 voxel_size_txy=[1000, 10, 10], min_neighbors=5, denoise_threshold=0.2):
+                 roi, denoise, denoise_method, denoise_radius, 
+                 voxel_size_txy, min_neighbors, denoise_threshold):
         self.data_root = data_root
         self.window_size_event_count = window_size_event_count
         self.step_size = step_size
         self.denoise = denoise  # 是否执行降噪
+        self.roi = roi  # 是否使用感兴趣区域
         self.denoise_method = denoise_method  # 降噪方法: 'density', 'dbscan', 'voxel', 'histogram', 'random', 'temporal'
         self.denoise_radius = denoise_radius  # 降噪搜索半径
         self.voxel_size_txy = voxel_size_txy  # 体素大小 [t, x, y] 单位: 微秒 和 像素
@@ -327,6 +329,12 @@ class ECountSeqDataset(Dataset):
         else:
             print("未启用降噪处理")
 
+        if self.roi:
+            x_offset, y_offset = 60, 25
+            print(f"启用空间裁剪处理, x: ({x_offset}, {346-x_offset}) y: ({y_offset}, {260-y_offset})")
+        else:
+            print("未启用空间裁剪处理")
+
         for class_name, class_idx in label_map.items():
             class_dir = os.path.join(self.data_root, class_name)
             for file in os.listdir(class_dir):
@@ -335,18 +343,19 @@ class ECountSeqDataset(Dataset):
                 file_path = os.path.join(class_dir, file)
                 events = np.load(file_path, allow_pickle=True) # (N, 4)
                 if events.size == 0 or events.shape[0] == 0:
-                    print(f"Warning: 文件 {file_path} 包含空的事件数组，跳过处理")
+                    print(f"Warning 1: 文件 {file_path} 包含空的事件数组，跳过处理")
                     continue
                 if len(events.shape) == 1:
-                    print(f"Warning: {file} 形状为1D !!!")
+                    print(f"Warning 2: {file} 形状为1D !!!")
                     events = np.array([list(event) for event in events])
                     print(f"转换 {file} 为 2D,形状 {events.shape}")
                 if events.shape[1] != 4:
-                    print(f"Warning: {file} 格式不对({events.shape}),跳过")
+                    print(f"Warning 3: {file} 格式不对({events.shape}),跳过")
                     continue
                 
                 # **统计初始总事件数**
                 total_event_count += len(events)
+                print(f"处理文件: {file_path}，事件数: {len(events)}")
 
                 # **降噪处理**
                 if self.denoise:
@@ -395,13 +404,25 @@ class ECountSeqDataset(Dataset):
                     )
                     
                     filtered_event_count += (original_count - len(events))
-                
-                # 检查降噪后是否还有足够的事件点
+
+                # 检查文件是否有足够的事件点
                 if len(events) < self.window_size_event_count:
-                    print(f"Warning: 文件 {file_path} 降噪后事件点数不足，跳过处理")
+                    print(f"Warning 4: 文件 {file_path} 中事件点数不足，跳过处理")
                     continue
 
-                # **正确解析数据**
+                # **空间裁剪，取xy中心的事件数据**
+                if self.roi:
+                    # 设定感兴趣区域的中心位置和大小
+                    # 346x260是事件图像的分辨率
+                    # 保留中心区域的事件点
+                    valid_mask = (events[:, 1] >= x_offset) & (events[:, 1] <= (346-x_offset)) & (events[:, 2] >= y_offset) & (events[:, 2] <= (260-y_offset))
+                    if not np.any(valid_mask): 
+                        print(f"Warning 5: 文件 {file_path} 中xy中心位置没有有效的事件点,跳过处理")
+                        continue
+                    events = events[valid_mask]
+                    print(f"文件 {file_path} 经过空间裁剪后剩余事件数: {len(events)}")
+
+                # 解析事件数据
                 t, x, y, p = events[:, 0], events[:, 1], events[:, 2], events[:, 3]
                 
                 # **时间归一化**
@@ -432,7 +453,7 @@ class ECountSeqDataset(Dataset):
         if len(window_durations) > 0:
             print(f"窗口持续时间范围: {np.min(window_durations):.2f} µs - {np.max(window_durations):.2f} µs")
             avg_duration = np.mean(window_durations)
-            print(f"平均窗口持续时间: {avg_duration:.2f} µs")
+            print(f"平均窗口持续时间: {avg_duration:.2f} µs\n")
     
     def __len__(self):
         return len(self.samples)
@@ -458,18 +479,19 @@ if __name__ == '__main__':
         window_size_event_count     = ds_cfg['window_size_event_count'],
         step_size                   = ds_cfg['step_size'],
         label_map                   = ds_cfg['label_map'],
-        denoise                     = True,        # 启用降噪 True False
-        denoise_method              = 'voxel',    # 降噪方法: 'density', 'dbscan', 'voxel', 'histogram', 'random', 'temporal'
-        denoise_radius              = 0.001,        # 调整半径参数 density: 0.05, dbscan: 0.05
-        voxel_size_txy              = [1000, 5, 5],  # 体素大小 [t, x, y] 单位: 微秒 和 像素
-        min_neighbors               = 5,           # 最小邻居数量阈值
-        denoise_threshold           = 0.2          # 密度阈值参数
+        roi                         = ds_cfg['roi'],           # 是否使用感兴趣区域
+        denoise                     = ds_cfg['denoise'],        # 启用降噪 True False
+        denoise_method              = ds_cfg['denoise_method'],    # 降噪方法: 'density', 'dbscan', 'voxel', 'histogram', 'random', 'temporal'
+        denoise_radius              = ds_cfg['denoise_radius'],        # 调整半径参数 density: 0.05, dbscan: 0.05
+        voxel_size_txy              = ds_cfg['voxel_size_txy'],  # 体素大小 [t, x, y] 单位: 微秒 和 像素
+        min_neighbors               = ds_cfg['min_neighbors'],           # 最小邻居数量阈值
+        denoise_threshold           = ds_cfg['denoise_threshold']          # 密度阈值参数
     )
     
     # 保存处理后的数据集到文件
     save_dir = "preprocessing_data"
     os.makedirs(save_dir, exist_ok=True)
-    save_path = os.path.join(save_dir, "val_data_0628_8_ecount_2.pkl")
+    save_path = os.path.join(save_dir, "val_data_0628_8_ecount_3.pkl") 
     with open(save_path, 'wb') as f:
         print(f"正在保存数据集到 {save_path} ...")
         pickle.dump(data_ds, f)

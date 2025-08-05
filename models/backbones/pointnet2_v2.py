@@ -20,6 +20,15 @@ class PointNet2Classifier(nn.Module):
         self.sa1 = PointNetSetAbstraction(npoint=512, radius=0.2, nsample=32, in_channel=in_channel, mlp=[64, 64, 128], group_all=False)
         self.sa2 = PointNetSetAbstraction(npoint=128, radius=0.4, nsample=64, in_channel=128 + 3, mlp=[128, 128, 256], group_all=False)
         self.sa3 = PointNetSetAbstraction(npoint=None, radius=None, nsample=None, in_channel=256 + 3, mlp=[256, 512, 1024], group_all=True)
+
+        # # 渐进式降采样架构
+        # self.sa1 = PointNetSetAbstraction(npoint=4096, radius=0.1, nsample=32, in_channel=in_channel, mlp=[32, 32, 64], group_all=False)
+        # self.sa2 = PointNetSetAbstraction(npoint=1024, radius=0.2, nsample=32, in_channel=64 + 3, mlp=[64, 64, 128], group_all=False)                          
+        # self.sa3 = PointNetSetAbstraction(npoint=256, radius=0.4, nsample=32, in_channel=128 + 3, mlp=[128, 128, 256], group_all=False)
+        # self.sa4 = PointNetSetAbstraction(npoint=64, radius=0.6, nsample=64, in_channel=256 + 3, mlp=[256, 256, 512], group_all=False) 
+        # self.sa5 = PointNetSetAbstraction(npoint=None, radius=None, nsample=None, in_channel=512 + 3, mlp=[512, 1024, 1024], group_all=True)
+        
+        # 全连接层
         self.fc1 = nn.Linear(1024, 512)
         self.bn1 = nn.BatchNorm1d(512)
         self.drop1 = nn.Dropout(0.4)
@@ -48,6 +57,14 @@ class PointNet2Classifier(nn.Module):
         xyz2, points2 = self.sa2(xyz1, points1)
         xyz3, points3 = self.sa3(xyz2, points2)  # points3: (B, 1024, N')
         x = points3.view(B, 1024)
+
+        # xyz1, points1 = self.sa1(xyz, points)     # 32768 -> 4096
+        # xyz2, points2 = self.sa2(xyz1, points1)   # 4096 -> 1024
+        # xyz3, points3 = self.sa3(xyz2, points2)   # 1024 -> 256
+        # xyz4, points4 = self.sa4(xyz3, points3)   # 256 -> 64
+        # _, points5 = self.sa5(xyz4, points4)      # 64 -> global
+        # x = points5.view(B, 1024)
+
         if x.size(0) == 1 and self.training: # 处理批次大小为1的情况
             print("Warning: Batch size is 1. This may cause instability with batch normalization.")
             x = torch.cat([x, x], dim=0) # 复制样本以创建批次大小为2的批次

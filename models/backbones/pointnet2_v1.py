@@ -55,11 +55,11 @@ class SetAbstraction(nn.Module):
         B, _, N = xyz.shape
 
         if self.npoint is not None:
-            # 简化版 FPS 
+            # 随机采样，速度快 
             idx = torch.randperm(N)[:self.npoint]  # idx shape: torch.Size([npoint])
             new_xyz = xyz[:, :, idx].contiguous()
 
-            # 真正的FPS
+            # 最远点采样FPS 
             # idx = farthest_point_sample(xyz, self.npoint)  # idx shape: torch.Size([B, npoint])
             # new_xyz = torch.gather(xyz, 2, idx.unsqueeze(1).expand(-1, 3, -1))
         else:
@@ -101,6 +101,14 @@ class PointNet2Classifier(nn.Module):
         self.sa2 = SetAbstraction(npoint=128, radius=0.4, nsample=64, in_channel=128, mlp=[128, 128, 256])
         self.sa3 = SetAbstraction(npoint=None, radius=None, nsample=1, in_channel=256, mlp=[256, 512, 1024])
 
+        # 渐进式降采样架构
+        # self.sa1 = SetAbstraction(npoint=4096, radius=0.1, nsample=32, in_channel=feature_dim, mlp=[32, 32, 64])
+        # self.sa2 = SetAbstraction(npoint=1024, radius=0.2, nsample=32, in_channel=64, mlp=[64, 64, 128])                          
+        # self.sa3 = SetAbstraction(npoint=256, radius=0.4, nsample=32, in_channel=128, mlp=[128, 128, 256])
+        # self.sa4 = SetAbstraction(npoint=64, radius=0.6, nsample=64, in_channel=256, mlp=[256, 256, 512]) 
+        # self.sa5 = SetAbstraction(npoint=None, radius=None, nsample=1, in_channel=512, mlp=[512, 1024, 1024])
+
+        # 全连接层
         self.fc1 = nn.Linear(1024, 512)
         self.bn1 = nn.BatchNorm1d(512)
         self.drop1 = nn.Dropout(0.5)
@@ -109,8 +117,6 @@ class PointNet2Classifier(nn.Module):
         self.drop2 = nn.Dropout(0.5)
         self.fc3 = nn.Linear(256, output_num_class)
         
-        
-
     def forward(self, x):
         # 检查输入维度 原始输入维度是(B, N, C)，需要转换为 (B, C, N)
         if x.dim() != 3:
@@ -130,9 +136,14 @@ class PointNet2Classifier(nn.Module):
         xyz1, points1 = self.sa1(xyz, points)
         xyz2, points2 = self.sa2(xyz1, points1)
         xyz3, points3 = self.sa3(xyz2, points2)  # points3: (B, 1024, N')
+        x = torch.max(points3, dim=2)[0] # 全局最大池化，降维到 (B, 1024)
 
-        # 全局最大池化，降维到 (B, 1024)
-        x = torch.max(points3, dim=2)[0]
+        # xyz1, points1 = self.sa1(xyz, points)     # 32768 -> 4096
+        # xyz2, points2 = self.sa2(xyz1, points1)   # 4096 -> 1024
+        # xyz3, points3 = self.sa3(xyz2, points2)   # 1024 -> 256
+        # xyz4, points4 = self.sa4(xyz3, points3)   # 256 -> 64
+        # _, points5 = self.sa5(xyz4, points4)      # 64 -> global
+        # x = torch.max(points5, dim=2)[0] # 全局最大池化，降维到 (B, 1024)
 
         # 处理批次大小为1的情况
         if x.size(0) == 1 and self.training:

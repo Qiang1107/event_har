@@ -17,10 +17,11 @@ from datasets.event_count_seq_dataset import ECountSeqDataset
 from models.backbones.vitmodel import VitModel
 from models.backbones.cnn import CNN_model
 
-from models.backbones.pointnet2_v3 import PointNet2Classifier
-# from models.backbones.pointnet2_v1 import PointNet2Classifier
-from models.backbones.pointnet2msg_v1 import PointNet2MSGClassifier
+
+from models.backbones.pointnet2_v1 import PointNet2Classifier
 # from models.backbones.pointnet2_v2 import PointNet2Classifier
+# from models.backbones.pointnet2_v3 import PointNet2Classifier
+from models.backbones.pointnet2msg_v1 import PointNet2MSGClassifier
 # from models.backbones.pointnet2msg_v2 import PointNet2MSGClassifier
 # from models.losses.cross_entropy_loss import CrossEntropyLoss
 from utils.weight_utils import load_vitpose_pretrained
@@ -36,20 +37,20 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
     ds = cfg['dataset']
     if model_type in ['pointnet2', 'pointnet2msg']:
         pnet2_data_dir = "preprocessing_data"
-        pnet2_train_pkl = "train_data_0628_8_ecount_1.pkl"
+        pnet2_train_pkl = "train_data_0628_8_ecount_3.pkl"
         pnet2_train_path = os.path.join(pnet2_data_dir, pnet2_train_pkl)
         print(f"Start loading training dataset from {pnet2_train_path}")
         with open(pnet2_train_path, 'rb') as f:
             train_ds = pickle.load(f)
         print(f"Loaded training dataset with {len(train_ds)} samples")
         
-        pnet2_val_path = os.path.join(pnet2_data_dir, "val_data_0628_8_ecount_1.pkl")
+        pnet2_val_path = os.path.join(pnet2_data_dir, "val_data_0628_8_ecount_3.pkl")
         print(f"Start loading validation dataset from {pnet2_val_path}")
         with open(pnet2_val_path, 'rb') as f:
             val_ds = pickle.load(f)
         print(f"Loaded validation dataset with {len(val_ds)} samples")
         
-        pnet2_test_path = os.path.join(pnet2_data_dir, "test_data_0628_8_ecount_1.pkl")
+        pnet2_test_path = os.path.join(pnet2_data_dir, "test_data_0628_8_ecount_3.pkl")
         print(f"Start loading test dataset from {pnet2_test_path}")
         with open(pnet2_test_path, 'rb') as f:
             test_ds = pickle.load(f)
@@ -117,6 +118,11 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
         loss_fn = nn.CrossEntropyLoss()
     else:
         raise ValueError(f"Unsupported model type: {model_type}")
+    
+    # 打印模型参数量（以百万为单位）
+    total_params = sum(p.numel() for p in model.parameters())
+    print(f"Total model parameters: {total_params / 1e6:.2f}M")
+    
 
     # —— 优化器 ——
     optim_cfg = cfg['optimizer']
@@ -186,7 +192,10 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
             f.write(f" ------Pointnet2 Model Configuration------\n")
             f.write(f" Loaded training data from: {pnet2_train_path}\n")
             f.write(f" Pointnet2 Model: {cfg['pointnet2_model']}\n")
+            f.write(f" PointNet2Classifier source file: {inspect.getfile(PointNet2Classifier)}\n")
+            f.write(f" PointNet2MSGClassifier source file: {inspect.getfile(PointNet2MSGClassifier)}\n")
             if 'eseq' in pnet2_train_pkl:
+                f.write(f" pnet2_train_path: {pnet2_train_path}\n")
                 f.write(f" window_size_us: {ds['window_size_us']}\n")
                 f.write(f" stride_us: {ds['stride_us']}\n")
                 f.write(f" max_points: {ds['max_points']}\n")
@@ -195,9 +204,17 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
                 f.write(f" target_height: {ds['target_height']}\n")
                 f.write(f" min_events_per_window: {ds['min_events_per_window']}\n")
             if 'ecount' in pnet2_train_pkl:
+                f.write(f" pnet2_train_path: {pnet2_train_path}\n")
                 f.write(f" window_size_event_count: {ds['window_size_event_count']}\n")
                 f.write(f" step_size: {ds['step_size']}\n")
-    
+                f.write(f" roi: {ds['roi']}\n")
+                f.write(f" denoise: {ds['denoise']}\n")
+                f.write(f" denoise_method: {ds['denoise_method']}\n")
+                f.write(f" denoise_radius: {ds['denoise_radius']}\n")
+                f.write(f" voxel_size_txy: {ds['voxel_size_txy']}\n")
+                f.write(f" min_neighbors: {ds['min_neighbors']}\n")
+                f.write(f" denoise_threshold: {ds['denoise_threshold']}\n")
+
     # 5. 训练、验证、测试
     best_acc = 0.0
     for epoch in range(cfg['epochs']):
@@ -210,8 +227,10 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
         for imgs, labels in tqdm.tqdm(train_loader):
             imgs = imgs.float().to(device)
             labels = labels.to(device)
+            # t0 = time.time()
             logits = model(imgs)
             loss = loss_fn(logits, labels)
+            # print(f"Batch {len(train_loader)}: Forward time: {time.time() - t0:.4f} seconds")
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -391,12 +410,13 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
 
 if __name__ == '__main__':
     import argparse
+    import inspect
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='configs/har_train_config.yaml',
                         help='Path to config file')
-    parser.add_argument('--model', type=str, default='results/checkpoints/pointnet2_event_0628_8_ecount_4.pth',
+    parser.add_argument('--model', type=str, default='results/checkpoints/pointnet2_event_0628_8_ecount_8.pth',
                         help='Path to save the best model')
-    parser.add_argument('--log', type=str, default='results/logs/trainlog_pointnet2_event_0628_8_ecount_4.txt',
+    parser.add_argument('--log', type=str, default='results/logs/trainlog_pointnet2_event_0628_8_ecount_8.txt',
                         help='Path to the log file')
     parser.add_argument('--pretrained', type=str, default='pretrained/vitpose-l.pth',
                         help='Path to pre-trained weights')

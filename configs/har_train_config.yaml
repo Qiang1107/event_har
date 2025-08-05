@@ -65,12 +65,13 @@ dataset:
   target_height:           260       # 目标图像高度 260 192 96
   min_events_per_window:   4000      # 一个时间窗口中最小事件数阈值
 
-  window_size_event_count: 32768     # 窗口包含的事件数,可选: 8192, 16384, 32768
-  step_size:               4096      # 滑动窗口步长（事件数）可选: 1024, 2048, 4096, 8192
-  denoise:                 true      # 是否执行降噪
+  window_size_event_count: 8192     # 窗口包含的事件数,可选: 8192, 16384, 32768
+  step_size:               1024      # 滑动窗口步长（事件数）可选: 1024, 2048, 4096, 8192
+  roi:                     true      # 是否使用感兴趣区域 false true
+  denoise:                 false      # 是否执行降噪 false true
   denoise_method:          'voxel'   # 降噪方法: 'density', 'dbscan', 'voxel', 'histogram', 'random', 'temporal'
-  denoise_radius:          0.05      # 降噪搜索半径
-  voxel_size_txy:          [1000, 10, 10] # 体素大小 [t, x, y] 单位: 微秒 和 像素
+  denoise_radius:          0.001      # 降噪搜索半径
+  voxel_size_txy:          [8000, 4, 4] # 体素大小 [t, x, y] 单位: 微秒 和 像素 t越大xy越大，保留更多的点
   min_neighbors:           5         # 最小邻居数量阈值
   denoise_threshold:       0.2       # 密度阈值参数
 
@@ -80,20 +81,20 @@ train:
   # ---------------------------------------
   # 32 for vit, 16 for cnn, 128 for pointnet2 in server
   # 32 or 16 for pointnet2msg in server
-  batch_size:   32
+  batch_size:   8
   # ---------------------------------------
   num_workers:  0     # 子进程加载训练数据
   shuffle:      true
 
 val:
   # ---------------------------------------
-  batch_size:   32
+  batch_size:   8
   # ---------------------------------------
   num_workers:  0     
   shuffle:      false
 
 test:
-  batch_size:   16
+  batch_size:   8
   num_workers:  0    
   shuffle:      false
 
