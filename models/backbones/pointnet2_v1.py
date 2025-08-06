@@ -56,12 +56,12 @@ class SetAbstraction(nn.Module):
 
         if self.npoint is not None:
             # 随机采样，速度快 
-            idx = torch.randperm(N)[:self.npoint]  # idx shape: torch.Size([npoint])
-            new_xyz = xyz[:, :, idx].contiguous()
+            # idx = torch.randperm(N)[:self.npoint]  # idx shape: torch.Size([npoint])
+            # new_xyz = xyz[:, :, idx].contiguous()
 
             # 最远点采样FPS 
-            # idx = farthest_point_sample(xyz, self.npoint)  # idx shape: torch.Size([B, npoint])
-            # new_xyz = torch.gather(xyz, 2, idx.unsqueeze(1).expand(-1, 3, -1))
+            idx = farthest_point_sample(xyz, self.npoint)  # idx shape: torch.Size([B, npoint])
+            new_xyz = torch.gather(xyz, 2, idx.unsqueeze(1).expand(-1, 3, -1))
         else:
             new_xyz = xyz
             self.npoint = N
