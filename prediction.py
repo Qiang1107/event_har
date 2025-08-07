@@ -17,10 +17,13 @@ from torch.utils.data import DataLoader
 from datasets.rgbe_sequence_dataset import RGBESequenceDataset
 from datasets.event_sequence_dataset import ESequenceDataset
 from datasets.event_count_seq_dataset import ECountSeqDataset
-from models.model import VitModel
+from models.backbones.vitmodel import VitModel
 from models.backbones.cnn import CNN_model
-from models.backbones.pointnet2 import PointNet2Classifier
-from models.backbones.pointnet2msg import PointNet2MSGClassifier
+from models.backbones.pointnet2_v1 import PointNet2Classifier
+# from models.backbones.pointnet2_v2 import PointNet2Classifier
+# from models.backbones.pointnet2_v3 import PointNet2Classifier
+from models.backbones.pointnet2msg_v1 import PointNet2MSGClassifier
+# from models.backbones.pointnet2msg_v2 import PointNet2MSGClassifier
 # from models.losses.cross_entropy_loss import CrossEntropyLoss
 from utils.weight_utils import load_vitpose_pretrained
 
