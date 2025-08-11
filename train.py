@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 from datasets.rgbe_sequence_dataset import RGBESequenceDataset
 from datasets.event_sequence_dataset import ESequenceDataset
 from datasets.event_count_seq_dataset import ECountSeqDataset
-from models.backbones.vitmodel import VitModel
+from utils.no_used.vitmodel import VitModel
 from models.backbones.cnn import CNN_model
 
 from models.backbones.pointnet2_v1 import PointNet2Classifier
@@ -135,8 +135,8 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
     # —— 带预热的余弦退火学习率调度器 —— 
     # cosine_warmup_scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=2, eta_min=1e-6)
     # —— StepLR 学习率调度器 ——
-    # step_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
-    step_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=25, gamma=0.1)
+    step_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+    # step_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=25, gamma=0.1)
     # —— 余弦退火学习率调度器 —— 
     # cosine_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg['epochs'], eta_min=1e-6)
     # —— 带预热的线性衰减调度器 —— 
@@ -176,6 +176,7 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
         f.write(f" learning rate: {optim_cfg['lr']}\n")
         f.write(f" weight decay: {optim_cfg['weight_decay']}\n")
         f.write(f" Model type: {model_type}\n")
+        f.write(f" Total model parameters: {total_params / 1e6:.2f}M\n")
         if model_type == 'vit':
             f.write(f" ------ViT Model Configuration------\n")
             f.write(f" Window_size: {ds['window_size']}\n")
@@ -414,9 +415,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='configs/har_train_config.yaml',
                         help='Path to config file')
-    parser.add_argument('--model', type=str, default='results/checkpoints/pointnet2_event_0628_8_ecount_10.pth',
+    parser.add_argument('--model', type=str, default='results/checkpoints/pointnet2_event_0628_8_ecount_11.pth',
                         help='Path to save the best model')
-    parser.add_argument('--log', type=str, default='results/logs/trainlog_pointnet2_event_0628_8_ecount_10.txt',
+    parser.add_argument('--log', type=str, default='results/logs/trainlog_pointnet2_event_0628_8_ecount_11.txt',
                         help='Path to the log file')
     parser.add_argument('--pretrained', type=str, default='pretrained/vitpose-l.pth',
                         help='Path to pre-trained weights')

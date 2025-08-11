@@ -8,7 +8,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from models.necks.sequence_neck import SequenceNeck
 from models.heads.classification_head import ClassificationHead
-from models.backbones.vit import ViT
+from models.backbones.vit_utils import ViT
 from utils.extensions import mosaic_frames
 
 

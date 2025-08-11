@@ -17,7 +17,7 @@ from torch.utils.data import DataLoader
 from datasets.rgbe_sequence_dataset import RGBESequenceDataset
 from datasets.event_sequence_dataset import ESequenceDataset
 from datasets.event_count_seq_dataset import ECountSeqDataset
-from models.backbones.vitmodel import VitModel
+from utils.no_used.vitmodel import VitModel
 from models.backbones.cnn import CNN_model
 from models.backbones.pointnet2_v1 import PointNet2Classifier
 # from models.backbones.pointnet2_v2 import PointNet2Classifier
