@@ -14,6 +14,16 @@ python train.py --config path/to/config.yaml \
                 --pretrained path/to/pretrained_weights.pth
 ```
 
+# log 说明
+test_data_0628_8_ecount_1.pkl 32768 4096 对应 trainlog_pointnet2_event_0628_8_ecount_6.txt
+test_data_0628_8_ecount_2.pkl 16384 2048 对应 trainlog_pointnet2_event_0628_8_ecount_7.txt
+test_data_0628_8_ecount_3.pkl 8192 1024 对应  对应 trainlog_pointnet2_event_0628_8_ecount_8.txt
+
+trainlog_pointnet2_event_0628_8_ecount_10.txt 100 epoch
+trainlog_pointnet2_event_0628_8_ecount_11.txt 30 epoch p2msg
+
+## resnet 预训练模型下载位置
+Downloading: "https://download.pytorch.org/models/resnet18-f37072fd.pth" to /home/qiang_qin/.cache/torch/hub/checkpoints/resnet18-f37072fd.pth
 
 # Data Processing
 ## 数据说明
@@ -52,7 +62,7 @@ single_channel_event_png    单通道事件数据
 基于 rgb_png，使用align_eventimg.py对事件数据进行时间对齐，得到 time_aligned_event_png
 3. 基于 time_aligned_event_png，继续使用align_eventimg.py对事件数据进行像素对齐，得到 pixel_aligned_event_png
 （手动对齐像素）
-4. 基于 pixel_aligned_event_png
+4. 基于 pixel_aligned_event_png, 使用 to_rgbe_channels.py
 对事件数据进行单通道变换，得到 single_channel_event
 多通道变换，得到 multiple_channels_RGBE
 5. 整理各个动作的起始帧和结束帧，得到action_list_0428.xlsx 和 action_list_abnorm_0428.xlsx

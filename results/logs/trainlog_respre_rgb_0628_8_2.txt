@@ -1,0 +1,229 @@
+ -----General Configuration------
+ Epochs: 20
+ Train batch size: 64
+ Validation batch size: 64
+ Test batch size: 32
+ optim type: AdamW
+ learning rate: 0.00025
+ weight decay: 1e-2
+ Model type: resnet_pretrained
+ Total model parameters: 22.08M
+ Window_size: 9
+ Stride: 3
+ ------Pretrained ResNet Model Configuration------
+ Pretrained ResNet Model: {'num_classes': 8, 'model_name': 'resnet34', 'pretrained': True, 'temporal_strategy': 'lstm', 'dropout': 0.5}
+
+[Epoch 1/20]
+Train Loss: 0.6622
+Training statistics: 7307 samples in 115 batches
+Training time: 377.42 seconds
+Val Loss: 1.6260, Val Acc: 0.5042
+Validation statistics: 2612 samples in 41 batches
+Validation time: 139.97 seconds
+Learning rate: 0.000250
+
+[Epoch 2/20]
+Train Loss: 0.2152
+Training statistics: 7307 samples in 115 batches
+Training time: 247.80 seconds
+Val Loss: 1.1116, Val Acc: 0.7293
+Validation statistics: 2612 samples in 41 batches
+Validation time: 119.69 seconds
+Learning rate: 0.000250
+
+[Epoch 3/20]
+Train Loss: 0.1572
+Training statistics: 7307 samples in 115 batches
+Training time: 230.39 seconds
+Val Loss: 1.4572, Val Acc: 0.6516
+Validation statistics: 2612 samples in 41 batches
+Validation time: 140.09 seconds
+Learning rate: 0.000250
+
+[Epoch 4/20]
+Train Loss: 0.1261
+Training statistics: 7307 samples in 115 batches
+Training time: 539.29 seconds
+Val Loss: 1.2549, Val Acc: 0.6887
+Validation statistics: 2612 samples in 41 batches
+Validation time: 132.61 seconds
+Learning rate: 0.000250
+
+[Epoch 5/20]
+Train Loss: 0.1107
+Training statistics: 7307 samples in 115 batches
+Training time: 227.71 seconds
+Val Loss: 1.0931, Val Acc: 0.7389
+Validation statistics: 2612 samples in 41 batches
+Validation time: 104.52 seconds
+Learning rate: 0.000250
+
+[Epoch 6/20]
+Train Loss: 0.0787
+Training statistics: 7307 samples in 115 batches
+Training time: 223.57 seconds
+Val Loss: 1.0570, Val Acc: 0.7665
+Validation statistics: 2612 samples in 41 batches
+Validation time: 100.29 seconds
+Learning rate: 0.000250
+
+[Epoch 7/20]
+Train Loss: 0.0744
+Training statistics: 7307 samples in 115 batches
+Training time: 224.86 seconds
+Val Loss: 0.9681, Val Acc: 0.7619
+Validation statistics: 2612 samples in 41 batches
+Validation time: 100.82 seconds
+Learning rate: 0.000250
+
+[Epoch 8/20]
+Train Loss: 0.0864
+Training statistics: 7307 samples in 115 batches
+Training time: 222.94 seconds
+Val Loss: 1.1027, Val Acc: 0.7320
+Validation statistics: 2612 samples in 41 batches
+Validation time: 99.95 seconds
+Learning rate: 0.000250
+
+[Epoch 9/20]
+Train Loss: 0.0400
+Training statistics: 7307 samples in 115 batches
+Training time: 225.42 seconds
+Val Loss: 1.0041, Val Acc: 0.7833
+Validation statistics: 2612 samples in 41 batches
+Validation time: 101.20 seconds
+Learning rate: 0.000250
+
+[Epoch 10/20]
+Train Loss: 0.0686
+Training statistics: 7307 samples in 115 batches
+Training time: 223.91 seconds
+Val Loss: 1.1939, Val Acc: 0.7255
+Validation statistics: 2612 samples in 41 batches
+Validation time: 101.17 seconds
+Learning rate: 0.000025
+
+[Epoch 11/20]
+Train Loss: 0.0266
+Training statistics: 7307 samples in 115 batches
+Training time: 222.74 seconds
+Val Loss: 1.0210, Val Acc: 0.7703
+Validation statistics: 2612 samples in 41 batches
+Validation time: 101.96 seconds
+Learning rate: 0.000025
+
+[Epoch 12/20]
+Train Loss: 0.0170
+Training statistics: 7307 samples in 115 batches
+Training time: 222.41 seconds
+Val Loss: 1.0428, Val Acc: 0.7734
+Validation statistics: 2612 samples in 41 batches
+Validation time: 100.20 seconds
+Learning rate: 0.000025
+
+[Epoch 13/20]
+Train Loss: 0.0103
+Training statistics: 7307 samples in 115 batches
+Training time: 228.46 seconds
+Val Loss: 1.0474, Val Acc: 0.7852
+Validation statistics: 2612 samples in 41 batches
+Validation time: 103.76 seconds
+Learning rate: 0.000025
+
+[Epoch 14/20]
+Train Loss: 0.0105
+Training statistics: 7307 samples in 115 batches
+Training time: 227.70 seconds
+Val Loss: 1.1369, Val Acc: 0.7680
+Validation statistics: 2612 samples in 41 batches
+Validation time: 103.00 seconds
+Learning rate: 0.000025
+
+[Epoch 15/20]
+Train Loss: 0.0066
+Training statistics: 7307 samples in 115 batches
+Training time: 230.41 seconds
+Val Loss: 1.1280, Val Acc: 0.7772
+Validation statistics: 2612 samples in 41 batches
+Validation time: 104.07 seconds
+Learning rate: 0.000025
+
+[Epoch 16/20]
+Train Loss: 0.0094
+Training statistics: 7307 samples in 115 batches
+Training time: 232.02 seconds
+Val Loss: 1.1792, Val Acc: 0.7546
+Validation statistics: 2612 samples in 41 batches
+Validation time: 101.37 seconds
+Learning rate: 0.000025
+
+[Epoch 17/20]
+Train Loss: 0.0081
+Training statistics: 7307 samples in 115 batches
+Training time: 229.73 seconds
+Val Loss: 1.1401, Val Acc: 0.7745
+Validation statistics: 2612 samples in 41 batches
+Validation time: 119.12 seconds
+Learning rate: 0.000025
+
+[Epoch 18/20]
+Train Loss: 0.0064
+Training statistics: 7307 samples in 115 batches
+Training time: 728.80 seconds
+Val Loss: 1.1901, Val Acc: 0.7737
+Validation statistics: 2612 samples in 41 batches
+Validation time: 144.21 seconds
+Learning rate: 0.000025
+
+[Epoch 19/20]
+Train Loss: 0.0059
+Training statistics: 7307 samples in 115 batches
+Training time: 251.30 seconds
+Val Loss: 1.1968, Val Acc: 0.7726
+Validation statistics: 2612 samples in 41 batches
+Validation time: 108.74 seconds
+Learning rate: 0.000025
+
+[Epoch 20/20]
+Train Loss: 0.0042
+Training statistics: 7307 samples in 115 batches
+Training time: 228.20 seconds
+Val Loss: 1.2242, Val Acc: 0.7749
+Validation statistics: 2612 samples in 41 batches
+Validation time: 110.03 seconds
+Learning rate: 0.000003
+
+[Test with best model from results/checkpoints/respre_rgb_0628_8_2.pth]
+Test statistics: 2614 samples in 82 batches
+Test time: 382.37 seconds
+Best validation accuracy: 0.7852220520673813
+Test Acc: 0.7724 (2019/2614)
+Per-class accuracy:
+Approach: 0.7602 (279/367)
+Pick_and_Place_Bolt: 0.7019 (219/312)
+Pick_and_Place_Cover: 0.7718 (301/390)
+Pick_and_Place_Part1_Small: 0.7582 (138/182)
+Pick_and_Place_Part2_Big: 0.6947 (198/285)
+Pick_and_Place_Screwdriver: 0.8243 (319/387)
+Screw: 0.7869 (384/488)
+Transition: 0.8916 (181/203)
+
+Confusion Matrix:
+279,29,7,6,15,13,0,18
+13,219,22,5,6,0,0,47
+47,0,301,8,34,0,0,0
+20,0,3,138,12,0,0,9
+41,28,0,18,198,0,0,0
+13,8,0,0,0,319,47,0
+0,2,0,0,0,102,384,0
+17,3,0,1,1,0,0,181
+
+Normalized Confusion Matrix:
+0.76,0.08,0.02,0.02,0.04,0.04,0.00,0.05
+0.04,0.70,0.07,0.02,0.02,0.00,0.00,0.15
+0.12,0.00,0.77,0.02,0.09,0.00,0.00,0.00
+0.11,0.00,0.02,0.76,0.07,0.00,0.00,0.05
+0.14,0.10,0.00,0.06,0.69,0.00,0.00,0.00
+0.03,0.02,0.00,0.00,0.00,0.82,0.12,0.00
+0.00,0.00,0.00,0.00,0.00,0.21,0.79,0.00
+0.08,0.01,0.00,0.00,0.00,0.00,0.00,0.89

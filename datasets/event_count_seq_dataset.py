@@ -475,7 +475,7 @@ if __name__ == '__main__':
     # 测试数据集
     ds_cfg = cfg['dataset']
     data_ds = ECountSeqDataset(
-        data_root                   = ds_cfg['val_dir'],
+        data_root                   = ds_cfg['test_dir'],
         window_size_event_count     = ds_cfg['window_size_event_count'],
         step_size                   = ds_cfg['step_size'],
         label_map                   = ds_cfg['label_map'],
@@ -491,7 +491,7 @@ if __name__ == '__main__':
     # 保存处理后的数据集到文件
     save_dir = "preprocessing_data"
     os.makedirs(save_dir, exist_ok=True)
-    save_path = os.path.join(save_dir, "val_data_0628_8_ecount_3.pkl") 
+    save_path = os.path.join(save_dir, "test_data_0628_8_ecount_3_confidence.pkl") 
     with open(save_path, 'wb') as f:
         print(f"正在保存数据集到 {save_path} ...")
         pickle.dump(data_ds, f)

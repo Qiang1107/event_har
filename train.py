@@ -9,13 +9,18 @@ from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+from torchvision import transforms
 
 from torch.utils.data import DataLoader
 from datasets.rgbe_sequence_dataset import RGBESequenceDataset
+from datasets.rgb_sequence_dataset import RGBSequenceDataset
 from datasets.event_sequence_dataset import ESequenceDataset
 from datasets.event_count_seq_dataset import ECountSeqDataset
-from utils.no_used.vitmodel import VitModel
+from models.backbones.vitmodel import VitModel
 from models.backbones.cnn import CNN_model
+from models.backbones.resnet import ResNet_model
+from models.backbones.resnet_pretrained import PretrainedResNet_model
+
 
 from models.backbones.pointnet2_v1 import PointNet2Classifier
 # from models.backbones.pointnet2_v2 import PointNet2Classifier
@@ -35,6 +40,7 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
     # 2. 构造 Dataset & DataLoader
     ds = cfg['dataset']
     if model_type in ['pointnet2', 'pointnet2msg']:
+        print("Using PointNet2 or PointNet2MSG model, loading PointNet2 datasets...")
         pnet2_data_dir = "preprocessing_data"
         pnet2_train_pkl = "train_data_0628_8_ecount_3.pkl"
         pnet2_train_path = os.path.join(pnet2_data_dir, pnet2_train_pkl)
@@ -60,7 +66,57 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
         test_loader = DataLoader(test_ds, **cfg['test'])
         print("DataLoader created for PointNet2 datasets.")
         
+    # elif model_type in ['cnn']:
+    #     print("Using CNN model, loading RGB datasets...")
+    #     # 数据增强
+    #     transform_train = transforms.Compose([
+    #         transforms.ToPILImage(),
+    #         transforms.Resize((128, 128)),
+    #         transforms.ToTensor(),
+    #         # transforms.RandomResizedCrop(img_size, scale=(0.8, 1.0)),
+    #         # transforms.RandomHorizontalFlip(),
+    #         # transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+    #         # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    # ])
+    #     train_ds = RGBSequenceDataset(
+    #         data_root          = ds['train_dir'],
+    #         window_size        = ds['window_size'],
+    #         stride             = ds['stride'],
+    #         enable_transform   = ds['enable_transform'],
+    #         label_map          = ds['label_map'],
+    #         transform          = transform_train # None # transform_train
+    #     )
+    #     val_ds = RGBSequenceDataset(
+    #         data_root          = ds['val_dir'],
+    #         window_size        = ds['window_size'],
+    #         stride             = ds['stride'],
+    #         enable_transform   = ds['enable_transform'],
+    #         label_map          = ds['label_map'],
+    #         transform          = transform_train # None # transform_train
+    #     )
+    #     test_ds = RGBSequenceDataset(
+    #         data_root          = ds['test_dir'],
+    #         window_size        = ds['window_size'],
+    #         stride             = ds['stride'],
+    #         enable_transform   = ds['enable_transform'],
+    #         label_map          = ds['label_map'],
+    #         transform          = transform_train # None # transform_train
+    #     )
+    #     train_loader = DataLoader(
+    #         train_ds,
+    #         **cfg['train']
+    #     )
+    #     val_loader = DataLoader(
+    #         val_ds,
+    #         **cfg['val']
+    #     )
+    #     test_loader = DataLoader(
+    #         test_ds,
+    #         **cfg['test']
+    #     )
+    
     else:
+        print(f"Using {model_type} model, loading RGBE datasets...") 
         train_ds = RGBESequenceDataset(
             data_root          = ds['train_dir'],
             window_size        = ds['window_size'],
@@ -114,6 +170,12 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
         loss_fn = nn.CrossEntropyLoss()
     elif model_type == 'cnn':
         model = CNN_model(cfg).to(device)
+        loss_fn = nn.CrossEntropyLoss()
+    elif model_type == 'resnet':
+        model = ResNet_model(cfg).to(device)
+        loss_fn = nn.CrossEntropyLoss()
+    elif model_type == 'resnet_pretrained':
+        model = PretrainedResNet_model(cfg).to(device)
         loss_fn = nn.CrossEntropyLoss()
     else:
         raise ValueError(f"Unsupported model type: {model_type}")
@@ -173,6 +235,7 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
         f.write(f" Train batch size: {cfg['train']['batch_size']}\n")
         f.write(f" Validation batch size: {cfg['val']['batch_size']}\n")
         f.write(f" Test batch size: {cfg['test']['batch_size']}\n")
+        f.write(f" optim type: {optim_cfg['type']}\n")
         f.write(f" learning rate: {optim_cfg['lr']}\n")
         f.write(f" weight decay: {optim_cfg['weight_decay']}\n")
         f.write(f" Model type: {model_type}\n")
@@ -184,12 +247,22 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
             f.write(f" ViT Model: {cfg['vit_model']}\n")
             if pretrained_path is not None:
                 f.write(f" Loaded pretrained model: {pretrained_path}\n")
-        if model_type == 'cnn':
+        elif model_type == 'cnn':
             f.write(f" Window_size: {ds['window_size']}\n")
             f.write(f" Stride: {ds['stride']}\n")
             f.write(f" ------CNN Model Configuration------\n")
             f.write(f" CNN Model: {cfg['cnn_model']}\n")
-        if model_type in ['pointnet2', 'pointnet2msg']:
+        elif model_type == 'resnet':
+            f.write(f" Window_size: {ds['window_size']}\n")
+            f.write(f" Stride: {ds['stride']}\n")
+            f.write(f" ------ResNet Model Configuration------\n")
+            f.write(f" ResNet Model: {cfg['resnet_model']}\n")
+        elif model_type == 'resnet_pretrained':
+            f.write(f" Window_size: {ds['window_size']}\n")
+            f.write(f" Stride: {ds['stride']}\n")
+            f.write(f" ------Pretrained ResNet Model Configuration------\n")
+            f.write(f" Pretrained ResNet Model: {cfg['resnet_pretrained_model']}\n")
+        elif model_type in ['pointnet2', 'pointnet2msg']:
             f.write(f" ------Pointnet2 Model Configuration------\n")
             f.write(f" Loaded training data from: {pnet2_train_path}\n")
             f.write(f" Pointnet2 Model: {cfg['pointnet2_model']}\n")
@@ -204,7 +277,7 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
                 f.write(f" target_width: {ds['target_width']}\n")
                 f.write(f" target_height: {ds['target_height']}\n")
                 f.write(f" min_events_per_window: {ds['min_events_per_window']}\n")
-            if 'ecount' in pnet2_train_pkl:
+            elif 'ecount' in pnet2_train_pkl:
                 f.write(f" pnet2_train_path: {pnet2_train_path}\n")
                 f.write(f" window_size_event_count: {ds['window_size_event_count']}\n")
                 f.write(f" step_size: {ds['step_size']}\n")
@@ -236,6 +309,7 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
+
         train_end_time = time.time()
         avg_train_loss = total_loss / len(train_loader)
 
@@ -415,11 +489,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='configs/har_train_config.yaml',
                         help='Path to config file')
-    parser.add_argument('--model', type=str, default='results/checkpoints/pointnet2_event_0628_8_ecount_11.pth',
+    parser.add_argument('--model', type=str, default='results/checkpoints/respre_rgb_0628_8_5.pth',
                         help='Path to save the best model')
-    parser.add_argument('--log', type=str, default='results/logs/trainlog_pointnet2_event_0628_8_ecount_11.txt',
+    parser.add_argument('--log', type=str, default='results/logs/trainlog_respre_rgb_0628_8_5.txt',
                         help='Path to the log file')
-    parser.add_argument('--pretrained', type=str, default='pretrained/vitpose-l.pth',
-                        help='Path to pre-trained weights')
+    parser.add_argument('--pretrained', type=str, default=None,
+                        help='Path to pre-trained weights: e.g. pretrained/vitpose-l.pth')
     args = parser.parse_args()
     main(args.config, args.model, args.log, args.pretrained)

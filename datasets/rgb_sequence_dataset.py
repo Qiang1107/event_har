@@ -3,14 +3,14 @@ import sys
 import yaml
 import numpy as np
 import torch
+from torchvision import transforms
 from torch.utils.data import Dataset
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from utils.extensions import resize_and_normalize
 
 
-# 四种数据以frame的形式保存为npy,然后通过RGBESequenceDataset加载
-class RGBESequenceDataset(Dataset):
-    def __init__(self, data_root, window_size, stride, enable_transform, label_map):
+class RGBSequenceDataset(Dataset):
+    def __init__(self, data_root, window_size, stride, enable_transform, label_map, transform=None):
         """
         data_root: 根目录，下面按类别子文件夹存 npy
         window_size: 每个样本固定帧数
@@ -20,6 +20,7 @@ class RGBESequenceDataset(Dataset):
         self.window_size = window_size
         self.stride = stride
         self.enable_transform = enable_transform
+        self.transform = transform
 
         # --- 预扫描 data_root，生成 (npy_path, start_idx, label) 列表 ---
         self.samples = []
@@ -35,6 +36,7 @@ class RGBESequenceDataset(Dataset):
                 # 对每个np文件，用滑窗切出定长片段
                 for start in range(0, N - window_size + 1, stride):
                     self.samples.append((full, start, cls_idx))
+
         print(f"加载了 {len(self.samples)} 个样本，共 {len(label_map)} 个类别")
 
     def __len__(self):
@@ -50,49 +52,26 @@ class RGBESequenceDataset(Dataset):
         clip = arr[start : start + self.window_size]  # (window_size, H, W, C)
         # print("clip.shape", clip.shape)
 
-        # 3. 归一化
-        # -----RGB 归一化-----
+        # 3. RGB归一化
         clip[..., :3] /= 255.0
 
-        # -----RGBE 归一化-----
-        # clip[..., :3] /= 255.0
-        # e = clip[..., 3]
-        # clip[..., 3] = np.where(e == 0, 0.0, 1.0)
-
-        # -----RGBD 归一化-----
-        # clip[..., :3] /= 255.0
-        # d = clip[..., 3]
-        # # Normalize depth channel
-        # d_min, d_max = d.min(), d.max()
-        # if d_max > d_min:  # Avoid division by zero
-        #     clip[..., 3] = (d - d_min) / (d_max - d_min)
-        # else:
-        #     clip[..., 3] = 0.0  # Set to zero if there's no depth variation
-
-        # -----Event 归一化-----
-        # e = clip[..., 0]
-        # clip[..., 0] = np.where(e == 0, 0.0, 1.0)
-        
         # 4. to Tensor & permute -> (T,C,H,W)
         clip = torch.from_numpy(clip).permute(0,3,1,2)
         # print("clip.shape after permute", clip.shape)
 
-        # 5. 对每一帧做缩放处理
+        # 5. 对每一帧做转换
         if self.enable_transform:
             frames = []
             for t in range(clip.size(0)):
-                # print("clip[t].shape", clip[t].shape)
-                frame = resize_and_normalize(clip[t])
-                # Make sure we have the channel dimension
-                if frame.dim() == 2:
-                    frame = frame.unsqueeze(0)
-                frames.append(frame)
+                img = self.transform(clip[t])
+                frames.append(img.squeeze(0))
             clip = torch.stack(frames, dim=0)
             # print("clip.shape after transform", clip.shape)
+            
         return clip, label
     
 
-# python -m datasets.rgbe_sequence_dataset
+# python -m datasets.rgb_sequence_dataset
 if __name__ == '__main__':
     config_path='configs/har_train_config.yaml'
     if not os.path.exists(config_path):
@@ -100,14 +79,26 @@ if __name__ == '__main__':
     with open(config_path, 'r') as f:
         cfg = yaml.safe_load(f)
     
+    # 数据增强
+    transform_train = transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.Resize((128, 128)),
+        transforms.ToTensor(),
+        # transforms.RandomResizedCrop(img_size, scale=(0.8, 1.0)),
+        # transforms.RandomHorizontalFlip(),
+        # transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+
     # 测试数据集
-    ds = RGBESequenceDataset(
+    ds = RGBSequenceDataset(
         data_root          = cfg['dataset']['train_dir'],
         window_size        = cfg['dataset']['window_size'],
         stride             = cfg['dataset']['stride'],
         enable_transform   = cfg['dataset']['enable_transform'],
-        label_map          = cfg['dataset']['label_map']
+        label_map          = cfg['dataset']['label_map'],
+        transform          = transform_train # None # transform_train
     )
     print("len(ds)", len(ds))
-    clip, label = ds[1296]
-    print("ds[0]: clip.shape", clip.shape, "label", label)
+    clip, label = ds[96]
+    print("ds[96]: clip.shape", clip.shape, "label", label)

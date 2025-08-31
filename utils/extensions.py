@@ -4,7 +4,7 @@ import torch
 
 def resize_and_normalize(img):
     import torchvision.transforms as T
-    target_size = (192, 256) # (H, W)
+    target_size = (128, 128) # (H, W) (192, 256) (224, 224)
     resize_transform = T.Compose([
         T.ToPILImage(),
         T.Resize(target_size),
@@ -17,7 +17,11 @@ def resize_and_normalize(img):
 
 
 def mosaic_frames(x: torch.Tensor) -> torch.Tensor:
-    # x: [B, T, C, H, W]
+    """
+    将视频帧拼接成大图
+    输入: x [B, T, C, H, W]
+    输出: big_image [B, C, H*k, W*k] 其中 k = ceil(sqrt(T))
+    """
     B, T, C, H, W = x.shape
     # 计算最近的上界整数平方尺寸 k
     k = math.ceil(math.sqrt(T))
