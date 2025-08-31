@@ -176,9 +176,9 @@ epochs:   20
 device:   cuda:0
 work_dir: results/checkpoints
 log_dir: results/logs
-test_log_dir: results/logs/test_logs
+test_log_dir: results/test_logs
 fig_dir: results/figs
-test_fig_dir: results/figs/test_figs
+test_fig_dir: results/test_figs
 # ---------------------------------------
 model_type: pointnet2msg  # options: cnn / vit / pointnet2 / pointnet2msg / resnet / resnet_pretrained
 # ---------------------------------------

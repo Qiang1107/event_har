@@ -491,7 +491,7 @@ if __name__ == '__main__':
     # 保存处理后的数据集到文件
     save_dir = "preprocessing_data"
     os.makedirs(save_dir, exist_ok=True)
-    save_path = os.path.join(save_dir, "test_data_0628_8_ecount_3.pkl") 
+    save_path = os.path.join(save_dir, "test_data_0628_8_ecount_3_confidence.pkl") 
     with open(save_path, 'wb') as f:
         print(f"正在保存数据集到 {save_path} ...")
         pickle.dump(data_ds, f)

@@ -244,7 +244,7 @@ if __name__ == '__main__':
                         help='Path to your_action_config.yaml')
     parser.add_argument('--model', type=str, default='results/checkpoints/pointnet2_event_0628_8_ecount_11.pth',
                         help='Path to the pre-trained model')
-    parser.add_argument('--log', type=str, default='results/logs/test_logs/testlog_pointnet2_event_0628_8_ecount_11.txt',
+    parser.add_argument('--log', type=str, default='results/test_logs/testlog_pointnet2_event_0628_8_ecount_11.txt',
                         help='Path to the log file')
     args = parser.parse_args()
     
