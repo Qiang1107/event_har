@@ -1,3 +1,10 @@
+"""
+测试评估脚本，针对 events, label 数据进行评估
+单样本评估
+保存测试日志和混淆矩阵图像
+"""
+
+
 import os
 import yaml
 import time
@@ -18,6 +25,7 @@ from datasets.rgbe_sequence_dataset import RGBESequenceDataset
 from datasets.rgb_sequence_dataset import RGBSequenceDataset
 from datasets.event_sequence_dataset import ESequenceDataset
 from datasets.event_count_seq_dataset import ECountSeqDataset
+from datasets.event_count_seq_dataset_vote import ECountSeqDatasetVote
 from models.backbones.vitmodel import VitModel
 from models.backbones.cnn import CNN_model
 from models.backbones.resnet import ResNet_model
@@ -50,8 +58,8 @@ def main(config_path, premodel_path, log_path):
             test_ds = pickle.load(f)
         print(f"Loaded test dataset with {len(test_ds)} samples")
         test_loader = DataLoader(test_ds, **cfg['test'])
-        print("DataLoader created for PointNet2 datasets.")
-        
+        print("DataLoader created for PointNet2 or PointNet2MSG datasets.")
+
     else:
         test_ds = RGBESequenceDataset(
             data_root          = ds['test_dir'],
@@ -125,7 +133,8 @@ def main(config_path, premodel_path, log_path):
             f.write(f" Pointnet2 Model: {cfg['pointnet2_model']}\n")
     
     # 5. 测试评估
-    for idx in range(10):
+    for idx in range(1):
+        idx=38
         print(f"Running iteration {idx+1}/10...")
         model.eval()
         class_correct = {}
@@ -244,7 +253,7 @@ if __name__ == '__main__':
                         help='Path to your_action_config.yaml')
     parser.add_argument('--model', type=str, default='results/checkpoints/pointnet2_event_0628_8_ecount_11.pth',
                         help='Path to the pre-trained model')
-    parser.add_argument('--log', type=str, default='results/test_logs/testlog_pointnet2_event_0628_8_ecount_11.txt',
+    parser.add_argument('--log', type=str, default='results/test_logs/testlog_pointnet2_event_0628_8_ecount_11_38.txt',
                         help='Path to the log file')
     args = parser.parse_args()
     
