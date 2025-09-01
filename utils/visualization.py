@@ -68,19 +68,22 @@ def parse_log(log_path):
 if __name__ == "__main__":
     os.makedirs('results/figs', exist_ok=True)    
     # ====== 配置区 ======
-    Log_path   = 'results/logs/training_log_pointnet2msg_event_8.txt'  # 日志文件
+    log_name = "voting_2.0s_20250901_163740"
+    # log_path = f"results/logs/{log_name}.txt"  # 日志文件
+    log_path = f"results/test_logs/{log_name}.txt"  # 日志文件
 
     # None  # 如果指定，保存为该文件，否则直接 plt.show()
-    val_acc_save_path  = 'results/figs/pointnet2msg_event_8_val_acc.png' 
-    train_loss_save_path  = 'results/figs/pointnet2msg_event_8_train_loss.png'
-    trainval_loss_save_path  = 'results/figs/pointnet2msg_event_8_trainval_loss.png'
-    trainval_time_save_path  = 'results/figs/pointnet2msg_event_8_trainval_time.png'
-    test_acc_save_path  = 'results/figs/pointnet2msg_event_8_test_acc.png' 
-    manually_all_models_test_acc_save_path = 'results/figs/all_models_test_acc.png' 
-    manually_all_models_test_time_save_path = 'results/figs/all_models_test_time.png' 
+    val_acc_save_path  = f"results/figs/{log_name}_val_acc.png"
+    train_loss_save_path  = f"results/figs/{log_name}_train_loss.png"
+    trainval_loss_save_path  = f"results/figs/{log_name}_train&val_loss.png"
+    trainval_time_save_path  = f"results/figs/{log_name}_train&val_time.png"
+    test_acc_save_path  = f"results/figs/{log_name}_test_acc.png"
+    manually_all_models_test_acc_save_path = f"results/figs/{log_name}_all_models_test_acc.png"
+    manually_all_models_test_time_save_path = f"results/figs/{log_name}_all_models_test_time.png"
+    vote_comparison_save_path = f"results/test_figs/{log_name}_vote_comparison.png"
     # ====================
 
-    results = parse_log(Log_path)
+    results = parse_log(log_path)
 
     epochs = results['epochs']
     val_losses = results['val_losses']
@@ -98,6 +101,7 @@ if __name__ == "__main__":
     print("5 - Test Accuracy")
     print("6 - All Models' Test Accuracy")
     print("7 - All Models' Test Time")
+    print("8 - Vote vs Single Sample Accuracy Comparison")
     
     choice = input("请输入选项编号(1-n): ")
     
@@ -213,7 +217,7 @@ if __name__ == "__main__":
             if key not in ['epochs', 'val_losses', 'val_times', 'val_accs', 
               'train_losses', 'train_times']:
                 if key == 'Acc':  # Change 'Acc' key to 'Overall'
-                    test_accs['Overall'] = value
+                    test_accs['Overall'] = value  # Convert to percentage
                 else:
                     test_accs[key] = value
         if not test_accs:
@@ -239,10 +243,10 @@ if __name__ == "__main__":
         # 添加每个柱子的数值标签
         for i, acc in enumerate(accuracies):
             if actions[i] == 'Overall':  # 为Overall添加特殊标签
-                plt.text(i, acc + 0.01, f'{acc:.4f}', ha='center', va='bottom',
-                         fontweight='bold', color='black', fontsize=11)
+                plt.text(i, acc - 0.02, f'{acc*100:.2f}%', ha='center', va='top',
+                         fontweight='bold', color='black', fontsize=12)
             else:
-                plt.text(i, acc + 0.01, f'{acc:.4f}', ha='center', va='bottom')
+                plt.text(i, acc - 0.02, f'{acc*100:.2f}%', ha='center', va='top', fontsize=12)
         plt.tight_layout()
         if test_acc_save_path:
             # plt.show()
@@ -317,8 +321,54 @@ if __name__ == "__main__":
         else:
             plt.show()
 
+    elif choice == '8':
+        # 手动绘制柱形图，手动设置xy数据，手动设置图片标题和xy轴标题。投票前后的测试准确率对比
+        color_schemes = {
+            '1': 'skyblue',  # 原始颜色
+            '2': "#19547e",  # 自定义色彩，可选
+            '3': ['#e74c3c', '#8e44ad', '#3498db', '#2ecc71', '#f1c40f', 
+                 '#e67e22', '#1abc9c', '#2c3e50', '#95a5a6', '#d35400'] # 参考颜色
+        }
+        # 投票前后各类别表现对比数据
+        categories = ['Approach', 'Pick_and_Place_Bolt', 'Pick_and_Place_Cover', 
+                 'Pick_and_Place_Part1_Small', 'Pick_and_Place_Part2_Big', 
+                 'Pick_and_Place_Screwdriver', 'Screw', 'Transition']
+        
+        # 多数投票后的准确率
+        voting_acc = [0.9773, 1.0000, 1.0000, 1.0000, 1.0000, 1.0000, 1.0000, 1.0000]
+        # 单样本的准确率  
+        single_acc = [0.9720, 0.9530, 0.9798, 0.9506, 0.9840, 0.9723, 0.9757, 0.9820]
+        
+        x = np.arange(len(categories))
+        width = 0.35
+        
+        plt.figure(figsize=(12, 8))
+        bars1 = plt.bar(x - width/2, voting_acc, width, label='Majority Voting', color="#51999f")
+        bars2 = plt.bar(x + width/2, single_acc, width, label='Single Sample', color="#ed8d5a")
+        
+        plt.xlabel('Categories')
+        plt.ylabel('Accuracy')
+        plt.title('Test Accuracy Comparison Before and After Voting')
+        plt.xticks(x, categories, rotation=45, ha='right')
+        plt.ylim(0.85, 1.02)
+        plt.legend()
+        plt.grid(axis='y', linestyle='--', alpha=0.7)
+        
+        # 添加数值标签
+        for i, (v1, v2) in enumerate(zip(voting_acc, single_acc)):
+            plt.text(i - width/2, v1 + 0.005, f'{v1*100:.2f}%', ha='center', va='bottom', fontsize=9)
+            plt.text(i + width/2, v2 + 0.005, f'{v2*100:.2f}%', ha='center', va='bottom', fontsize=9)
+
+        plt.tight_layout()
+        if vote_comparison_save_path:
+            # plt.show()
+            plt.savefig(vote_comparison_save_path, dpi=150)
+            print(f"图已保存到 {vote_comparison_save_path}")
+        else:
+            plt.show()
+
     else:
-        print("无效选项,请选择1-5")
+        print("无效选项,请选择1-n")
         exit()
  
     

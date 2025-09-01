@@ -1,3 +1,8 @@
+"""
+针对同一个log文件包含多个测试阶段，提取所有测试准确率，并绘制柱形图
+"""
+
+
 import re
 import matplotlib.pyplot as plt
 import os
@@ -10,40 +15,34 @@ def parse_log(log_path):
 
     # 查找所有形如 "Test Acc: 0.8394 (1307/1557)" 中的 0.8394，然后计算平均值
     Test_acc_matches = re.findall(r'Test Acc:\s*([\d\.]+)', content)
-    Align_screwdriver_acc_matches = re.findall(r'Align_screwdriver:\s*([\d\.]+)', content)
     Approach_acc_matches = re.findall(r'Approach:\s*([\d\.]+)', content)
-    Pick_bolt_acc_matches = re.findall(r'Pick_bolt:\s*([\d\.]+)', content)
-    Pick_cover_acc_matches = re.findall(r'Pick_cover:\s*([\d\.]+)', content)
-    Pick_screwdriver_acc_matches = re.findall(r'Pick_screwdriver:\s*([\d\.]+)', content)
-    Place_bolt_acc_matches = re.findall(r'Place_bolt:\s*([\d\.]+)', content)
-    Place_cover_acc_matches = re.findall(r'Place_cover:\s*([\d\.]+)', content)
-    Put_down_screwdriver_acc_matches = re.findall(r'Put_down_screwdriver:\s*([\d\.]+)', content)
+    Pick_and_Place_Bolt_acc_matches = re.findall(r'Pick_and_Place_Bolt:\s*([\d\.]+)', content)
+    Pick_and_Place_Cover_acc_matches = re.findall(r'Pick_and_Place_Cover:\s*([\d\.]+)', content)
+    Pick_and_Place_Part1_Small_acc_matches = re.findall(r'Pick_and_Place_Part1_Small:\s*([\d\.]+)', content)
+    Pick_and_Place_Part2_Big_acc_matches = re.findall(r'Pick_and_Place_Part2_Big:\s*([\d\.]+)', content)
+    Pick_and_Place_Screwdriver_acc_matches = re.findall(r'Pick_and_Place_Screwdriver:\s*([\d\.]+)', content)
     Screw_acc_matches = re.findall(r'Screw:\s*([\d\.]+)', content)
     Transition_acc_matches = re.findall(r'Transition:\s*([\d\.]+)', content)
 
     # Convert matched accuracy strings to float values for each action
     test_acc_values = list(map(float, Test_acc_matches))
-    align_screwdriver_values = list(map(float, Align_screwdriver_acc_matches))
     approach_values = list(map(float, Approach_acc_matches))
-    pick_bolt_values = list(map(float, Pick_bolt_acc_matches))
-    pick_cover_values = list(map(float, Pick_cover_acc_matches))
-    pick_screwdriver_values = list(map(float, Pick_screwdriver_acc_matches))
-    place_bolt_values = list(map(float, Place_bolt_acc_matches))
-    place_cover_values = list(map(float, Place_cover_acc_matches))
-    put_down_screwdriver_values = list(map(float, Put_down_screwdriver_acc_matches))
+    pick_and_place_bolt_values = list(map(float, Pick_and_Place_Bolt_acc_matches))
+    pick_and_place_cover_values = list(map(float, Pick_and_Place_Cover_acc_matches))
+    pick_and_place_part1_small_values = list(map(float, Pick_and_Place_Part1_Small_acc_matches))
+    pick_and_place_part2_big_values = list(map(float, Pick_and_Place_Part2_Big_acc_matches))
+    pick_and_place_screwdriver_values = list(map(float, Pick_and_Place_Screwdriver_acc_matches))
     screw_values = list(map(float, Screw_acc_matches))
     transition_values = list(map(float, Transition_acc_matches))
 
     # Calculate average accuracy for each action
     test_avg_acc = sum(test_acc_values) / len(test_acc_values) if test_acc_values else 0
-    align_screwdriver_avg = sum(align_screwdriver_values) / len(align_screwdriver_values) if align_screwdriver_values else 0
     approach_avg = sum(approach_values) / len(approach_values) if approach_values else 0
-    pick_bolt_avg = sum(pick_bolt_values) / len(pick_bolt_values) if pick_bolt_values else 0
-    pick_cover_avg = sum(pick_cover_values) / len(pick_cover_values) if pick_cover_values else 0
-    pick_screwdriver_avg = sum(pick_screwdriver_values) / len(pick_screwdriver_values) if pick_screwdriver_values else 0
-    place_bolt_avg = sum(place_bolt_values) / len(place_bolt_values) if place_bolt_values else 0
-    place_cover_avg = sum(place_cover_values) / len(place_cover_values) if place_cover_values else 0
-    put_down_screwdriver_avg = sum(put_down_screwdriver_values) / len(put_down_screwdriver_values) if put_down_screwdriver_values else 0
+    pick_and_place_bolt_avg = sum(pick_and_place_bolt_values) / len(pick_and_place_bolt_values) if pick_and_place_bolt_values else 0
+    pick_and_place_cover_avg = sum(pick_and_place_cover_values) / len(pick_and_place_cover_values) if pick_and_place_cover_values else 0
+    pick_and_place_part1_small_avg = sum(pick_and_place_part1_small_values) / len(pick_and_place_part1_small_values) if pick_and_place_part1_small_values else 0
+    pick_and_place_part2_big_avg = sum(pick_and_place_part2_big_values) / len(pick_and_place_part2_big_values) if pick_and_place_part2_big_values else 0
+    pick_and_place_screwdriver_avg = sum(pick_and_place_screwdriver_values) / len(pick_and_place_screwdriver_values) if pick_and_place_screwdriver_values else 0
     screw_avg = sum(screw_values) / len(screw_values) if screw_values else 0
     transition_avg = sum(transition_values) / len(transition_values) if transition_values else 0
     
@@ -59,14 +58,12 @@ def parse_log(log_path):
     # 构建结果字典
     results = {
         'Test Acc': test_avg_acc
-        , 'Align_screwdriver': align_screwdriver_avg
         , 'Approach': approach_avg
-        , 'Pick_bolt': pick_bolt_avg
-        , 'Pick_cover': pick_cover_avg
-        , 'Pick_screwdriver': pick_screwdriver_avg
-        , 'Place_bolt': place_bolt_avg
-        , 'Place_cover': place_cover_avg
-        , 'Put_down_screwdriver': put_down_screwdriver_avg
+        , 'Pick_and_Place_Bolt': pick_and_place_bolt_avg
+        , 'Pick_and_Place_Cover': pick_and_place_cover_avg
+        , 'Pick_and_Place_Part1_Small': pick_and_place_part1_small_avg
+        , 'Pick_and_Place_Part2_Big': pick_and_place_part2_big_avg
+        , 'Pick_and_Place_Screwdriver': pick_and_place_screwdriver_avg
         , 'Screw': screw_avg
         , 'Transition': transition_avg
         , 'Test Time': test_avg_time
@@ -80,13 +77,14 @@ def parse_log(log_path):
 if __name__ == "__main__":
     os.makedirs('results/figs', exist_ok=True)    
     # ====== 配置区 ======
-    Log_path   = 'results/logs/test_pnet2msg_log_7.txt'  # 日志文件
+    log_name = "testlog_pointnet2_event_0628_8_ecount_11"
+    log_path = f"results/test_logs/{log_name}.txt"  # 日志文件
 
     # None  # 如果指定，保存为该文件，否则直接 plt.show()
-    test_acc_save_path  = 'results/figs/average_pnet2msg_test_acc_7.png' 
+    test_acc_save_path  = f"results/test_figs/{log_name}_average_test_acc.png"
     # ====================
 
-    results = parse_log(Log_path)
+    results = parse_log(log_path)
     test_avg_time = results['Test Time']
     test_avg_samples = results['Test Samples']
     
@@ -129,10 +127,10 @@ if __name__ == "__main__":
         # 添加每个柱子的数值标签
         for i, acc in enumerate(accuracies):
             if actions[i] == 'Test Acc':  # 为Test Acc添加特殊标签
-                plt.text(i, acc + 0.01, f'{acc:.4f}', ha='center', va='bottom',
-                         fontweight='bold', color='black', fontsize=11)
+                plt.text(i, acc - 0.02, f'{acc*100:.2f}%', ha='center', va='top',
+                         fontweight='bold', color='black', fontsize=12)
             else:
-                plt.text(i, acc + 0.01, f'{acc:.4f}', ha='center', va='bottom')
+                plt.text(i, acc - 0.02, f'{acc*100:.2f}%', ha='center', va='top')
         plt.tight_layout()
         if test_acc_save_path:
             # plt.show()
