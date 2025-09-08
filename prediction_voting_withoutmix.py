@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-完善时间窗口多数投票系统
-未修改完
-
-
 简化的时间窗口投票预测系统
 - 使用新的数据预处理逻辑 test_data_0628_8_ecount_3_vote.pkl
 - 只使用简单多数投票

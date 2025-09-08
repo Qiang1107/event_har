@@ -1,5 +1,6 @@
 """
-测试评估脚本，针对 events, label 数据进行评估
+测试评估脚本，使用预处理数据 test_data_0628_8_ecount_3.pkl
+针对 events, label 数据进行评估
 单样本评估
 保存测试日志和混淆矩阵图像
 """
@@ -100,8 +101,11 @@ def main(config_path, premodel_path, log_path):
         raise FileNotFoundError(f"Model file not found at {premodel_path}")
 
     # 创建日志目录和文件
+    best_model_filename = os.path.basename(premodel_path).split('.')[0]
     if log_path is None:
-        log_path = os.path.join(cfg['test_log_dir'], 'testing_log_tmp.txt')
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        log_path = os.path.join(cfg['test_log_dir'], f'{best_model_filename}_{timestamp}.txt')
+
     os.makedirs(cfg['test_log_dir'], exist_ok=True)
     os.makedirs(cfg['test_fig_dir'], exist_ok=True)
     with open(log_path, 'a') as f:
@@ -145,17 +149,32 @@ def main(config_path, premodel_path, log_path):
         for class_name in class_names:
             class_correct[class_name] = 0
             class_total[class_name] = 0
-        test_start_time = time.time()
-
         # 收集所有预测和真实标签用于混淆矩阵
         all_preds = []
         all_labels = []
+        
+        # 纯推理时间统计
+        total_inference_time = 0.0
+        num_batches = 0
 
         with torch.no_grad():
             for imgs, labels in tqdm.tqdm(test_loader):
                 imgs = imgs.float().to(device)
                 labels = labels.to(device)
-                logits = model(imgs)
+                
+                # 确保GPU同步，开始计时纯推理
+                torch.cuda.synchronize() if torch.cuda.is_available() else None
+                inference_start = time.time()
+                
+                logits = model(imgs)  # 纯推理时间
+                
+                # 确保GPU同步，结束计时纯推理
+                torch.cuda.synchronize() if torch.cuda.is_available() else None
+                inference_end = time.time()
+                
+                total_inference_time += (inference_end - inference_start)
+                num_batches += 1
+                
                 preds = logits.argmax(dim=1)
 
                 # 保存预测和标签用于混淆矩阵
@@ -173,19 +192,31 @@ def main(config_path, premodel_path, log_path):
 
                 correct += (preds == labels).sum().item()
                 total   += labels.size(0)
-        test_end_time = time.time()
+        
+        # 计算时间统计
+        avg_inference_time_per_batch = total_inference_time / num_batches if num_batches > 0 else 0
+        avg_inference_time_per_sample = total_inference_time / total if total > 0 else 0
+        throughput_samples_per_second = total / total_inference_time if total_inference_time > 0 else 0
+        
         test_acc = correct / total
-        test_time = test_end_time - test_start_time
         num_test_batches = len(test_loader)
         num_test_samples = len(test_ds)
+        
         print(f"Test statistics: {num_test_samples} samples in {num_test_batches} batches")
-        print(f"Test time: {test_time:.2f} seconds")
+        print(f"Pure inference time: {total_inference_time:.4f} seconds")
+        print(f"Average inference time per batch: {avg_inference_time_per_batch:.4f} seconds")
+        print(f"Average inference time per sample: {avg_inference_time_per_sample:.6f} seconds")
+        print(f"Throughput: {throughput_samples_per_second:.2f} samples/second")
         print(f"Test Acc: {test_acc:.4f}")
+        
         with open(log_path, 'a') as f:
             f.write(f"\n-----------------------------------------------------------------------\n")
             f.write(f"Iteration {idx+1}:\n")
             f.write(f"Test statistics: {num_test_samples} samples in {num_test_batches} batches\n")
-            f.write(f"Test time: {test_time:.2f} seconds\n")
+            f.write(f"Pure inference time: {total_inference_time:.4f} seconds\n")
+            f.write(f"Average inference time per batch: {avg_inference_time_per_batch:.4f} seconds\n")
+            f.write(f"Average inference time per sample: {avg_inference_time_per_sample:.6f} seconds\n")
+            f.write(f"Throughput: {throughput_samples_per_second:.2f} samples/second\n")
             f.write(f"Test Acc: {test_acc:.4f} ({correct}/{total})\n")
 
         # Print and log per-class accuracy
@@ -213,7 +244,7 @@ def main(config_path, premodel_path, log_path):
         
         # 保存混淆矩阵图像
         os.makedirs(cfg['test_fig_dir'], exist_ok=True)
-        best_model_filename = os.path.basename(premodel_path).split('.')[0]
+        
         confusion_matrix_path = os.path.join(cfg['test_fig_dir'], f"{best_model_filename}_confusion_matrix_{idx+1}.png")
         plt.tight_layout()
         plt.savefig(confusion_matrix_path)
@@ -253,7 +284,7 @@ if __name__ == '__main__':
                         help='Path to your_action_config.yaml')
     parser.add_argument('--model', type=str, default='results/checkpoints/pointnet2_event_0628_8_ecount_11.pth',
                         help='Path to the pre-trained model')
-    parser.add_argument('--log', type=str, default='results/test_logs/testlog_pointnet2_event_0628_8_ecount_11_38.txt',
+    parser.add_argument('--log', type=str, default=None, # results/test_logs/testlog_pointnet2_event_0628_8_ecount_11_38.txt
                         help='Path to the log file')
     args = parser.parse_args()
     
