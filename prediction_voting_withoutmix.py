@@ -3,9 +3,9 @@
 """
 简化的时间窗口投票预测系统
 - 使用新的数据预处理逻辑 test_data_0628_8_ecount_3_vote.pkl
-- 只使用简单多数投票
-- 基于真实时间戳进行时间窗口分组
-- 过滤掉混合标签的时间窗口
+- 使用简单多数投票 
+- center_timestamp 或者 start_timestamp 进行时间窗口投票
+- [过滤掉混合标签的时间窗口]
 
 # 使用不同的时间窗口大小
 python simple_temporal_voting.py --data preprocessing_data/test_data_0628_8_ecount_3_vote.pkl --time_window 0.5
@@ -78,11 +78,15 @@ class SimpleTemporalVoting:
         
         return final_prediction, window_true_label, len(votes), vote_count
     
-    def predict_with_vote_dataset(self, model, vote_dataset, device, class_names, log_path):
+    def predict_with_vote_dataset(self, model, vote_dataset, device, log_path):
         """使用 vote dataset 进行时间窗口投票预测"""
         model.eval()
         
         all_predictions = []
+        
+        # 纯推理时间统计
+        total_inference_time = 0.0
+        num_samples = 0
         
         message = f"开始对 {len(vote_dataset)} 个样本进行预测..."
         print(message)
@@ -97,7 +101,20 @@ class SimpleTemporalVoting:
                 
                 # 转换为tensor并预测
                 events_tensor = torch.FloatTensor(events).unsqueeze(0).to(device)
-                logits = model(events_tensor)
+                
+                # 确保GPU同步，开始计时纯推理
+                torch.cuda.synchronize() if torch.cuda.is_available() else None
+                inference_start = time.time()
+                
+                logits = model(events_tensor)  # 纯推理时间
+                
+                # 确保GPU同步，结束计时纯推理
+                torch.cuda.synchronize() if torch.cuda.is_available() else None
+                inference_end = time.time()
+                
+                total_inference_time += (inference_end - inference_start)
+                num_samples += 1
+                
                 prediction = torch.argmax(logits, dim=1).item()
                 
                 # 保存预测结果
@@ -154,6 +171,21 @@ class SimpleTemporalVoting:
                     'window_end_time': max([pred['center_timestamp'] for pred in window_preds])
                 })
         
+        # 计算推理时间统计
+        avg_inference_time_per_sample = total_inference_time / num_samples if num_samples > 0 else 0
+        throughput_samples_per_second = num_samples / total_inference_time if total_inference_time > 0 else 0
+        
+        # 输出推理时间统计
+        inference_stats = f"\n=== 推理时间统计 ==="
+        inference_stats += f"\n总样本数: {num_samples}"
+        inference_stats += f"\n纯推理时间: {total_inference_time:.4f} 秒"
+        inference_stats += f"\n平均每样本推理时间: {avg_inference_time_per_sample:.6f} 秒"
+        inference_stats += f"\n推理吞吐量: {throughput_samples_per_second:.2f} 样本/秒"
+        
+        print(inference_stats)
+        with open(log_path, 'a') as f:
+            f.write(inference_stats + "\n")
+        
         mixed_message = f"混合标签的时间窗口数: {mixed_label_windows}/{len(time_windows)} ({100*mixed_label_windows/len(time_windows):.1f}%)"
         removed_message = f"移除混合标签窗口后，剩余有效窗口数: {len(window_results)}/{len(time_windows)}"
         print(mixed_message)
@@ -162,9 +194,9 @@ class SimpleTemporalVoting:
             f.write(mixed_message + "\n")
             f.write(removed_message + "\n")
         
-        return window_results, all_predictions, mixed_label_windows, len(time_windows)
+        return window_results, all_predictions, mixed_label_windows, len(time_windows), total_inference_time, num_samples
 
-def analyze_voting_results(window_results, all_predictions, class_names, log_path, cfg, model_path, time_window_sec, timestamp, mixed_label_windows=0, total_windows=0):
+def analyze_voting_results(window_results, all_predictions, class_names, log_path, cfg, model_path, time_window_sec, timestamp, mixed_label_windows=0, total_windows=0, total_inference_time=0.0, num_samples=0):
     """分析时间窗口投票结果"""
     
     if not window_results:
@@ -190,6 +222,16 @@ def analyze_voting_results(window_results, all_predictions, class_names, log_pat
     analysis_text += f"单样本准确率: {individual_accuracy:.4f} ({individual_accuracy*100:.2f}%)\n"
     analysis_text += f"时间窗口投票准确率: {window_accuracy:.4f} ({window_accuracy*100:.2f}%)\n"
     analysis_text += f"准确率提升: {window_accuracy - individual_accuracy:+.4f} ({(window_accuracy - individual_accuracy)*100:+.2f}%)\n"
+    
+    # 推理时间统计
+    if num_samples > 0 and total_inference_time > 0:
+        avg_inference_time_per_sample = total_inference_time / num_samples
+        throughput_samples_per_second = num_samples / total_inference_time
+        analysis_text += f"\n=== 推理性能统计 ===\n"
+        analysis_text += f"总样本数: {num_samples}\n"
+        analysis_text += f"纯推理时间: {total_inference_time:.4f} 秒\n"
+        analysis_text += f"平均每样本推理时间: {avg_inference_time_per_sample:.6f} 秒\n"
+        analysis_text += f"推理吞吐量: {throughput_samples_per_second:.2f} 样本/秒\n"
     
     print(analysis_text)
     with open(log_path, 'a') as f:
@@ -221,20 +263,20 @@ def analyze_voting_results(window_results, all_predictions, class_names, log_pat
     
     # 每类别准确率
     class_performance = f"\n=== 多数投票后各类别表现 ===\n"
-    class_performance += f"{'类别':<20} {'窗口数':<8} {'准确率':<10}\n"
-    class_performance += "-" * 40 + "\n"
+    class_performance += f"{'类别':<30} {'窗口数':<8} {'准确率':<10}\n"
+    class_performance += "-" * 50 + "\n"
 
     print(f"\n=== 多数投票后各类别表现 ===")
-    print(f"{'类别':<20} {'窗口数':<8} {'准确率':<10}")
-    print("-" * 40)
+    print(f"{'类别':<30} {'窗口数':<8} {'准确率':<10}")
+    print("-" * 50)
     
     for class_idx, class_name in enumerate(class_names):
         class_mask = np.array(window_true_labels) == class_idx
         if np.sum(class_mask) > 0:
             class_accuracy = np.mean(np.array(window_predictions)[class_mask] == class_idx)
             class_count = np.sum(class_mask)
-            class_line = f"{class_name:<20} {class_count:<8} {class_accuracy:<10.4f}\n"
-            print(f"{class_name:<20} {class_count:<8} {class_accuracy:<10.4f}")
+            class_line = f"{class_name:<30} {class_count:<8} {100*class_accuracy:^.2f}%\n"
+            print(f"{class_name:<30} {class_count:<8} {100*class_accuracy:^.2f}%")
             class_performance += class_line
     
     with open(log_path, 'a') as f:
@@ -242,20 +284,20 @@ def analyze_voting_results(window_results, all_predictions, class_names, log_pat
     
     # 单样本各类别准确率
     individual_class_performance = f"\n=== 单样本各类别表现 ===\n"
-    individual_class_performance += f"{'类别':<20} {'样本数':<8} {'准确率':<10}\n"
-    individual_class_performance += "-" * 40 + "\n"
+    individual_class_performance += f"{'类别':<30} {'样本数':<8} {'准确率':<10}\n"
+    individual_class_performance += "-" * 50 + "\n"
     
     print(f"\n=== 单样本各类别表现 ===")
-    print(f"{'类别':<20} {'样本数':<8} {'准确率':<10}")
-    print("-" * 40)
-    
+    print(f"{'类别':<30} {'样本数':<8} {'准确率':<10}")
+    print("-" * 50)
+
     for class_idx, class_name in enumerate(class_names):
         class_mask = np.array(individual_true_labels) == class_idx
         if np.sum(class_mask) > 0:
             class_accuracy = np.mean(np.array(individual_predictions)[class_mask] == class_idx)
             class_count = np.sum(class_mask)
-            class_line = f"{class_name:<20} {class_count:<8} {class_accuracy:<10.4f}\n"
-            print(f"{class_name:<20} {class_count:<8} {class_accuracy:<10.4f}")
+            class_line = f"{class_name:<30} {class_count:<8} {100*class_accuracy:^.2f}%\n"
+            print(f"{class_name:<30} {class_count:<8} {100*class_accuracy:^.2f}%")
             individual_class_performance += class_line
     
     with open(log_path, 'a') as f:
@@ -380,7 +422,7 @@ def main(config_path, model_path, vote_data_path, log_path=None, time_window_sec
         f.write(f"数据来源: {vote_data_path}\n")
         f.write(f"配置文件: {config_path}\n")
         f.write(f"模型文件: {model_path}\n")
-        f.write(f"开始时间: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        f.write(f"\n开始时间: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
     
     print(f"=== 时间窗口投票预测系统 ===")
     print(f"模型类型: {model_type}")
@@ -433,8 +475,8 @@ def main(config_path, model_path, vote_data_path, log_path=None, time_window_sec
     
     # 5. 进行预测
     start_time = time.time()
-    window_results, all_predictions, mixed_label_windows, total_windows = predictor.predict_with_vote_dataset(
-        model, vote_dataset, device, class_names, log_path
+    window_results, all_predictions, mixed_label_windows, total_windows, total_inference_time, num_samples = predictor.predict_with_vote_dataset(
+        model, vote_dataset, device, log_path
     )
     prediction_time = time.time() - start_time
     
@@ -444,23 +486,31 @@ def main(config_path, model_path, vote_data_path, log_path=None, time_window_sec
         f.write(time_info + "\n")
     
     # 6. 分析结果
-    analysis_results = analyze_voting_results(window_results, all_predictions, class_names, log_path, cfg, model_path, time_window_sec, timestamp, mixed_label_windows, total_windows)
+    analysis_results = analyze_voting_results(window_results, all_predictions, class_names, log_path, cfg, model_path, time_window_sec, timestamp, mixed_label_windows, total_windows, total_inference_time, num_samples)
     
     # 7. 更新日志文件
     with open(log_path, 'a') as f:
         f.write(f"\n=== 主要指标 ===\n")
         f.write(f"时间窗口数量: {analysis_results['num_windows']}\n")
         f.write(f"单样本预测数量: {analysis_results['num_individual_predictions']}\n")
-        f.write(f"单样本准确率: {analysis_results['individual_accuracy']:.4f}\n")
-        f.write(f"时间窗口投票准确率: {analysis_results['window_accuracy']:.4f}\n")
-        f.write(f"准确率提升: {analysis_results['accuracy_improvement']:+.4f}\n")
+        f.write(f"单样本准确率: {100*analysis_results['individual_accuracy']:.2f}%\n")
+        f.write(f"时间窗口投票准确率: {100*analysis_results['window_accuracy']:.2f}%\n")
+        f.write(f"准确率提升: {100*analysis_results['accuracy_improvement']:+.2f}%\n")
         f.write(f"预测时间: {prediction_time:.2f}秒\n")
-        f.write(f"结束时间: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+        if total_inference_time > 0 and num_samples > 0:
+            f.write(f"纯推理时间: {total_inference_time:.4f}秒\n")
+            f.write(f"平均每样本推理时间: {total_inference_time/num_samples:.6f}秒\n")
+            f.write(f"推理吞吐量: {num_samples/total_inference_time:.2f}样本/秒\n")
+        f.write(f"\n结束时间: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
     
     result_summary = f"\n=== 结果总结 ==="
-    result_summary += f"\n时间窗口投票准确率: {analysis_results['window_accuracy']:.4f}"
-    result_summary += f"\n单样本准确率: {analysis_results['individual_accuracy']:.4f}"
-    result_summary += f"\n准确率提升: {analysis_results['accuracy_improvement']:+.4f}"
+    result_summary += f"\n时间窗口投票准确率: {100*analysis_results['window_accuracy']:.2f}%"
+    result_summary += f"\n单样本准确率: {100*analysis_results['individual_accuracy']:.2f}%"
+    result_summary += f"\n准确率提升: {100*analysis_results['accuracy_improvement']:+.2f}%"
+    if total_inference_time > 0 and num_samples > 0:
+        result_summary += f"\n纯推理时间: {total_inference_time:.4f}秒"
+        result_summary += f"\n平均每样本推理时间: {total_inference_time/num_samples:.6f}秒"
+        result_summary += f"\n推理吞吐量: {num_samples/total_inference_time:.2f}样本/秒"
     result_summary += f"\n日志文件: {log_path}"
     
     print(result_summary)
