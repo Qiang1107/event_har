@@ -19,7 +19,9 @@ test_data_0628_8_ecount_1.pkl 32768 4096 对应 trainlog_pointnet2_event_0628_8_
 test_data_0628_8_ecount_2.pkl 16384 2048 对应 trainlog_pointnet2_event_0628_8_ecount_7.txt
 test_data_0628_8_ecount_3.pkl 8192 1024 对应  对应 trainlog_pointnet2_event_0628_8_ecount_8.txt
 
-trainlog_pointnet2_event_0628_8_ecount_10.txt 100 epoch
+trainlog_pointnet2_event_0628_8_ecount_9.txt 重复实验，舍去 
+
+trainlog_pointnet2_event_0628_8_ecount_10.txt 100 epoch p2
 trainlog_pointnet2_event_0628_8_ecount_11.txt 30 epoch p2msg
 
 ## resnet 预训练模型下载位置

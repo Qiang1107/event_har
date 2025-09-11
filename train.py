@@ -40,7 +40,7 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
     # 2. 构造 Dataset & DataLoader
     ds = cfg['dataset']
     if model_type in ['pointnet2', 'pointnet2msg']:
-        print("Using PointNet2 or PointNet2MSG model, loading PointNet2 datasets...")
+        print(f"Using {model_type} model, loading event datasets...")
         pnet2_data_dir = "preprocessing_data"
         pnet2_train_pkl = "train_data_0628_8_ecount_3.pkl"
         pnet2_train_path = os.path.join(pnet2_data_dir, pnet2_train_pkl)
@@ -67,7 +67,7 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
         print("DataLoader created for PointNet2 datasets.")
         
     # elif model_type in ['cnn']:
-    #     print("Using CNN model, loading RGB datasets...")
+    #     print(f"Using {model_type} model, loading RGB datasets...")
     #     # 数据增强
     #     transform_train = transforms.Compose([
     #         transforms.ToPILImage(),
@@ -225,8 +225,11 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
     scheduler = step_scheduler
 
     # 4. 创建日志目录和文件
+    best_model_filename = os.path.basename(best_model_path).split('.')[0]
     if log_path is None:
-        log_path = os.path.join(cfg['log_dir'], 'training_log_tmp.txt')
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        log_path = os.path.join(cfg['log_dir'], f'trainlog_{best_model_filename}_{timestamp}.txt')
+
     os.makedirs(cfg['log_dir'], exist_ok=True)
     os.makedirs(cfg['work_dir'], exist_ok=True)
     with open(log_path, 'a') as f:
@@ -449,7 +452,7 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
     
     # 保存混淆矩阵图像
     os.makedirs(cfg['fig_dir'], exist_ok=True)
-    best_model_filename = os.path.basename(best_model_path).split('.')[0]
+    
     confusion_matrix_path = os.path.join(cfg['fig_dir'], f"{best_model_filename}_confusion_matrix.png")
     plt.tight_layout()
     plt.savefig(confusion_matrix_path)
@@ -489,9 +492,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='configs/har_train_config.yaml',
                         help='Path to config file')
-    parser.add_argument('--model', type=str, default='results/checkpoints/respre_rgb_0628_8_5.pth',
+    parser.add_argument('--model', type=str, default='results/checkpoints/pointnet2_event_0628_8_12.pth',
                         help='Path to save the best model')
-    parser.add_argument('--log', type=str, default='results/logs/trainlog_respre_rgb_0628_8_5.txt',
+    parser.add_argument('--log', type=str, default=None,  # 'results/logs/trainlog_respre_rgb_0628_8_5.txt',
                         help='Path to the log file')
     parser.add_argument('--pretrained', type=str, default=None,
                         help='Path to pre-trained weights: e.g. pretrained/vitpose-l.pth')

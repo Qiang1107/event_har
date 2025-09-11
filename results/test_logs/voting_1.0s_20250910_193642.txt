@@ -1,0 +1,151 @@
+=== Time Window Voting Prediction System ===
+Model type: pointnet2msg
+Time window: 1.0 seconds
+Voting method: Simple majority voting
+Data source: preprocessing_data/test_data_0628_8_ecount_3_vote.pkl
+Config file: configs/har_test_config.yaml
+Model file: results/checkpoints/pointnet2_event_0628_8_ecount_11.pth
+
+Start time: 2025-09-10 19:36:42
+
+Using device: cuda:0
+Model loaded successfully: results/checkpoints/pointnet2_event_0628_8_ecount_11.pth
+
+Loading vote dataset: preprocessing_data/test_data_0628_8_ecount_3_vote.pkl
+Loaded 11278 samples with timestamps
+Starting prediction for 11278 samples...
+Grouping predictions by 1.0s time windows...
+Performing majority voting in 270 time windows...
+Warning: Time window 1751111408 contains mixed labels {0, 7}, skipping this window
+Warning: Time window 1751111409 contains mixed labels {0, 4}, skipping this window
+Warning: Time window 1751111851 contains mixed labels {5, 7}, skipping this window
+Warning: Time window 1751111914 contains mixed labels {0, 2}, skipping this window
+Warning: Time window 1751111938 contains mixed labels {5, 7}, skipping this window
+Warning: Time window 1751112070 contains mixed labels {3, 7}, skipping this window
+Warning: Time window 1751112386 contains mixed labels {5, 6}, skipping this window
+Warning: Time window 1751113405 contains mixed labels {3, 7}, skipping this window
+Warning: Time window 1751114629 contains mixed labels {5, 6}, skipping this window
+Warning: Time window 1751114633 contains mixed labels {0, 3}, skipping this window
+Warning: Time window 1751114789 contains mixed labels {0, 7}, skipping this window
+Warning: Time window 1751115198 contains mixed labels {4, 7}, skipping this window
+Warning: Time window 1751115568 contains mixed labels {0, 5}, skipping this window
+
+=== Inference Time Statistics ===
+Total samples: 11278
+Pure inference time: 22.4586 seconds
+Average inference time per sample: 0.001991 seconds
+Inference throughput: 502.17 samples/second
+Mixed label time windows: 13/270 (4.8%)
+Valid windows after removing mixed labels: 257/270
+Prediction completed, elapsed time: 23.25 seconds
+
+=== Time Window Voting Results Analysis ===
+Number of time windows: 257
+Number of individual predictions: 11278
+Individual sample accuracy: 0.9741 (97.41%)
+Time window voting accuracy: 0.9961 (99.61%)
+Accuracy improvement: +0.0220 (+2.20%)
+
+=== Inference Performance Statistics ===
+Total samples: 11278
+Pure inference time: 22.4586 seconds
+Average inference time per sample: 0.001991 seconds
+Inference throughput: 502.17 samples/second
+
+=== Voting Statistics ===
+Predictions per window - Average: 40.8, Min: 1, Max: 181
+Voting consistency - Average: 0.972, Min: 0.556, Max: 1.000
+Mixed label windows: 13/270 (4.8%) - removed
+Valid analysis windows: 257/270 (95.2%)
+
+=== Per-class Performance After Majority Voting ===
+Class                          Windows  Accuracy  
+--------------------------------------------------
+Approach                       55       98.18%
+Pick_and_Place_Bolt            25       100.00%
+Pick_and_Place_Cover           30       100.00%
+Pick_and_Place_Part1_Small     16       100.00%
+Pick_and_Place_Part2_Big       22       100.00%
+Pick_and_Place_Screwdriver     36       100.00%
+Screw                          36       100.00%
+Transition                     37       100.00%
+
+=== Individual Sample Per-class Performance ===
+Class                          Samples  Accuracy  
+--------------------------------------------------
+Approach                       2677     97.42%
+Pick_and_Place_Bolt            937      95.30%
+Pick_and_Place_Cover           1731     97.46%
+Pick_and_Place_Part1_Small     708      95.76%
+Pick_and_Place_Part2_Big       1184     98.82%
+Pick_and_Place_Screwdriver     1877     97.71%
+Screw                          493      97.77%
+Transition                     1671     97.79%
+
+=== Window-level Confusion Matrix ===
+54,0,0,0,0,0,0,1
+0,25,0,0,0,0,0,0
+0,0,30,0,0,0,0,0
+0,0,0,16,0,0,0,0
+0,0,0,0,22,0,0,0
+0,0,0,0,0,36,0,0
+0,0,0,0,0,0,36,0
+0,0,0,0,0,0,0,37
+
+=== Window-level Normalized Confusion Matrix ===
+0.98,0.00,0.00,0.00,0.00,0.00,0.00,0.02
+0.00,1.00,0.00,0.00,0.00,0.00,0.00,0.00
+0.00,0.00,1.00,0.00,0.00,0.00,0.00,0.00
+0.00,0.00,0.00,1.00,0.00,0.00,0.00,0.00
+0.00,0.00,0.00,0.00,1.00,0.00,0.00,0.00
+0.00,0.00,0.00,0.00,0.00,1.00,0.00,0.00
+0.00,0.00,0.00,0.00,0.00,0.00,1.00,0.00
+0.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00
+
+=== Individual Sample Confusion Matrix ===
+2608,1,4,8,7,3,1,45
+0,893,0,24,0,20,0,0
+0,2,1687,1,41,0,0,0
+8,1,0,678,4,17,0,0
+0,1,2,10,1170,0,0,1
+11,19,3,0,0,1834,7,3
+0,0,0,0,0,11,482,0
+26,0,0,8,0,3,0,1634
+
+=== Individual Sample Normalized Confusion Matrix ===
+0.97,0.00,0.00,0.00,0.00,0.00,0.00,0.02
+0.00,0.95,0.00,0.03,0.00,0.02,0.00,0.00
+0.00,0.00,0.97,0.00,0.02,0.00,0.00,0.00
+0.01,0.00,0.00,0.96,0.01,0.02,0.00,0.00
+0.00,0.00,0.00,0.01,0.99,0.00,0.00,0.00
+0.01,0.01,0.00,0.00,0.00,0.98,0.00,0.00
+0.00,0.00,0.00,0.00,0.00,0.02,0.98,0.00
+0.02,0.00,0.00,0.00,0.00,0.00,0.00,0.98
+
+Confusion matrix image paths:
+Window-level: results/test_figs/pointnet2_event_0628_8_ecount_11_window_confusion_matrix_time_window_sec_1.0s_20250910_193642.png
+Window-level normalized: results/test_figs/pointnet2_event_0628_8_ecount_11_window_norm_confusion_matrix_1.0s_20250910_193642.png
+Individual sample: results/test_figs/pointnet2_event_0628_8_ecount_11_individual_confusion_matrix_1.0s_20250910_193642.png
+Individual sample normalized: results/test_figs/pointnet2_event_0628_8_ecount_11_individual_norm_confusion_matrix_1.0s_20250910_193642.png
+
+=== Key Metrics ===
+Number of time windows: 257
+Number of individual predictions: 11278
+Individual sample accuracy: 97.41%
+Time window voting accuracy: 99.61%
+Accuracy improvement: +2.20%
+Prediction time: 23.25 seconds
+Pure inference time: 22.4586 seconds
+Average inference time per sample: 0.001991 seconds
+Inference throughput: 502.17 samples/second
+
+End time: 2025-09-10 19:37:07
+
+=== Results Summary ===
+Time window voting accuracy: 99.61%
+Individual sample accuracy: 97.41%
+Accuracy improvement: +2.20%
+Pure inference time: 22.4586 seconds
+Average inference time per sample: 0.001991 seconds
+Inference throughput: 502.17 samples/second
+Log file: results/test_logs/voting_1.0s_20250910_193642.txt
