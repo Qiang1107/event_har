@@ -1,0 +1,47 @@
+ Model loaded from: results/checkpoints/pointnet2_event_0628_8_ecount_11.pth
+ Model type: pointnet2msg
+ ------pointnet2msg Configuration------
+ Loaded test data from: preprocessing_data/test_data_0628_8_ecount_3_vote.pkl
+ window_size_event_count: 8192
+ step_size: 1024
+ roi: True
+ denoise: False
+ Pointnet2 Model: {'num_classes': 8, 'normal_channel': True, 'input_dim': 4, 'use_temporal_enhancement': True, 'time_feature_dim': 8, 'temporal_pooling': True, 'attention_mechanism': True, 'temporal_enhancement': {'encoder_hidden_dim': 4, 'fusion_hidden_multiplier': 2, 'positional_encoding_scale': 10000}, 'temporal_attention': {'num_heads': 4, 'temporal_scales': [4, 8, 16], 'dropout_rate': 0.1}, 'adaptive_pooling': {'consistency_hidden_dim': 2, 'gate_activation': 'sigmoid'}}
+
+-----------------------------------------------------------------------
+Iteration 1:
+Test statistics: 11278 samples in 705 batches
+Pure inference time: 25.7202 seconds
+Average inference time per batch: 0.0365 seconds
+Average inference time per sample: 0.002281 seconds
+Throughput: 438.49 samples/second
+Test Acc: 0.9737 (10981/11278)
+Per-class accuracy:
+Approach: 0.9716 (2601/2677)
+Pick_and_Place_Bolt: 0.9573 (897/937)
+Pick_and_Place_Cover: 0.9775 (1692/1731)
+Pick_and_Place_Part1_Small: 0.9605 (680/708)
+Pick_and_Place_Part2_Big: 0.9865 (1168/1184)
+Pick_and_Place_Screwdriver: 0.9712 (1823/1877)
+Screw: 0.9777 (482/493)
+Transition: 0.9803 (1638/1671)
+
+Confusion Matrix:
+2601,1,10,13,6,5,1,40
+0,897,1,21,0,18,0,0
+0,3,1692,0,35,1,0,0
+5,4,0,680,5,14,0,0
+0,0,5,11,1168,0,0,0
+19,21,2,2,1,1823,5,4
+0,1,0,0,0,10,482,0
+27,0,0,5,0,1,0,1638
+
+Normalized Confusion Matrix:
+0.97,0.00,0.00,0.00,0.00,0.00,0.00,0.01
+0.00,0.96,0.00,0.02,0.00,0.02,0.00,0.00
+0.00,0.00,0.98,0.00,0.02,0.00,0.00,0.00
+0.01,0.01,0.00,0.96,0.01,0.02,0.00,0.00
+0.00,0.00,0.00,0.01,0.99,0.00,0.00,0.00
+0.01,0.01,0.00,0.00,0.00,0.97,0.00,0.00
+0.00,0.00,0.00,0.00,0.00,0.02,0.98,0.00
+0.02,0.00,0.00,0.00,0.00,0.00,0.00,0.98

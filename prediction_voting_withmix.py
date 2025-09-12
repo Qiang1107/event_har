@@ -421,6 +421,11 @@ def main(config_path, model_path, vote_data_path, log_path=None, time_window_sec
         f.write(f"Data source: {vote_data_path}\n")
         f.write(f"Config file: {config_path}\n")
         f.write(f"Model file: {model_path}\n")
+        if model_type in ['pointnet2', 'pointnet2msg']:
+            f.write(f"window_size_event_count: {ds['window_size_event_count']}\n")
+            f.write(f"step_size: {ds['step_size']}\n")
+            f.write(f"roi: {ds['roi']}\n")
+            f.write(f"denoise: {ds['denoise']}\n")
         f.write(f"\nStart time: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
     
     print(f"=== Time Window Voting Prediction System ===")
@@ -518,7 +523,7 @@ def main(config_path, model_path, vote_data_path, log_path=None, time_window_sec
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Time Window Voting Prediction System')
-    parser.add_argument('--config', type=str, default='configs/har_test_config.yaml',
+    parser.add_argument('--config', type=str, default='configs/har_train_config.yaml',
                         help='Configuration file path')
     parser.add_argument('--model', type=str, 
                         default='results/checkpoints/pointnet2_event_0628_8_ecount_11.pth',

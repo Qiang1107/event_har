@@ -1,0 +1,377 @@
+=== Time Window Voting Prediction System ===
+Model type: pointnet2msg
+Time window: 0.8 seconds
+Verbose window output: False
+Voting method: Simple majority voting
+Data source: preprocessing_data/test_data_0628_8_ecount_3_vote.pkl
+Config file: configs/har_test_config.yaml
+Model file: results/checkpoints/pointnet2_event_0628_8_ecount_11.pth
+
+Start time: 2025-09-11 18:52:54
+
+Using device: cuda:0
+Model loaded successfully: results/checkpoints/pointnet2_event_0628_8_ecount_11.pth
+
+Loading vote dataset: preprocessing_data/test_data_0628_8_ecount_3_vote.pkl
+Loaded 11278 samples with timestamps
+Starting prediction for 11278 samples...
+Grouping predictions by 0.8s time windows...
+Performing majority voting in 322 time windows...
+
+!!! INCORRECT Window 2188889279 !!!
+True label: 0, Final prediction: 7
+Total samples: 20, Vote count: 10/20
+Prediction distribution: {5: 2, 7: 10, 4: 1, 0: 7}
+
+=== Mixed Label Window 2188889814 - Splitting ===
+Original window: 57 samples with labels [5, 7]
+Splitting into 2 sub-windows by true label:
+  Sub-window 1 (ID: 2188889814_sub_0_label_5):
+    True label: 5
+    Samples: 6
+    Final prediction: 5
+    Vote count: 4/6 (66.7%)
+    Prediction distribution: {5: 4, 2: 1, 3: 1}
+    Result: CORRECT
+    Time range: 1751111851200120 - 1751111851303988 microseconds
+  Sub-window 2 (ID: 2188889814_sub_1_label_7):
+    True label: 7
+    Samples: 51
+    Final prediction: 7
+    Vote count: 51/51 (100.0%)
+    Prediction distribution: {7: 51}
+    Result: CORRECT
+    Time range: 1751111851453039 - 1751111851763024 microseconds
+Mixed window 2188889814 successfully split into 2 sub-windows
+
+=== Mixed Label Window 2188890087 - Splitting ===
+Original window: 31 samples with labels [3, 7]
+Splitting into 2 sub-windows by true label:
+  Sub-window 1 (ID: 2188890087_sub_0_label_3):
+    True label: 3
+    Samples: 14
+    Final prediction: 3
+    Vote count: 14/14 (100.0%)
+    Prediction distribution: {3: 14}
+    Result: CORRECT
+    Time range: 1751112069639680 - 1751112070186448 microseconds
+  Sub-window 2 (ID: 2188890087_sub_1_label_7):
+    True label: 7
+    Samples: 17
+    Final prediction: 7
+    Vote count: 17/17 (100.0%)
+    Prediction distribution: {7: 17}
+    Result: CORRECT
+    Time range: 1751112070280762 - 1751112070397422 microseconds
+Mixed window 2188890087 successfully split into 2 sub-windows
+
+!!! INCORRECT Window 2188890302 !!!
+True label: 6, Final prediction: 5
+Total samples: 1, Vote count: 1/1
+Prediction distribution: {5: 1}
+
+=== Mixed Label Window 2188890382 - Splitting ===
+Original window: 25 samples with labels [0, 5]
+Splitting into 2 sub-windows by true label:
+  Sub-window 1 (ID: 2188890382_sub_0_label_0):
+    True label: 0
+    Samples: 23
+    Final prediction: 0
+    Vote count: 23/23 (100.0%)
+    Prediction distribution: {0: 23}
+    Result: CORRECT
+    Time range: 1751112305610923 - 1751112305996373 microseconds
+  Sub-window 2 (ID: 2188890382_sub_1_label_5):
+    True label: 5
+    Samples: 2
+    Final prediction: 5
+    Vote count: 2/2 (100.0%)
+    Prediction distribution: {5: 2}
+    Result: CORRECT
+    Time range: 1751112306323526 - 1751112306381107 microseconds
+Mixed window 2188890382 successfully split into 2 sub-windows
+
+=== Mixed Label Window 2188890482 - Splitting ===
+Original window: 30 samples with labels [5, 6]
+Splitting into 2 sub-windows by true label:
+  Sub-window 1 (ID: 2188890482_sub_0_label_5):
+    True label: 5
+    Samples: 16
+    Final prediction: 5
+    Vote count: 16/16 (100.0%)
+    Prediction distribution: {5: 16}
+    Result: CORRECT
+    Time range: 1751112386220304 - 1751112386393174 microseconds
+  Sub-window 2 (ID: 2188890482_sub_1_label_6):
+    True label: 6
+    Samples: 14
+    Final prediction: 6
+    Vote count: 14/14 (100.0%)
+    Prediction distribution: {6: 14}
+    Result: CORRECT
+    Time range: 1751112385648170 - 1751112386089494 microseconds
+Mixed window 2188890482 successfully split into 2 sub-windows
+
+!!! INCORRECT Window 2188891756 !!!
+True label: 3, Final prediction: 4
+Total samples: 3, Vote count: 2/3
+Prediction distribution: {4: 2, 3: 1}
+
+=== Mixed Label Window 2188893291 - Splitting ===
+Original window: 59 samples with labels [0, 3]
+Splitting into 2 sub-windows by true label:
+  Sub-window 1 (ID: 2188893291_sub_0_label_0):
+    True label: 0
+    Samples: 19
+    Final prediction: 0
+    Vote count: 19/19 (100.0%)
+    Prediction distribution: {0: 19}
+    Result: CORRECT
+    Time range: 1751114632807522 - 1751114633083998 microseconds
+  Sub-window 2 (ID: 2188893291_sub_1_label_3):
+    True label: 3
+    Samples: 40
+    Final prediction: 3
+    Vote count: 40/40 (100.0%)
+    Prediction distribution: {3: 40}
+    Result: CORRECT
+    Time range: 1751114633270443 - 1751114633594916 microseconds
+Mixed window 2188893291 successfully split into 2 sub-windows
+
+=== Mixed Label Window 2188893426 - Splitting ===
+Original window: 34 samples with labels [0, 7]
+Splitting into 2 sub-windows by true label:
+  Sub-window 1 (ID: 2188893426_sub_0_label_0):
+    True label: 0
+    Samples: 31
+    Final prediction: 0
+    Vote count: 31/31 (100.0%)
+    Prediction distribution: {0: 31}
+    Result: CORRECT
+    Time range: 1751114741153844 - 1751114741594614 microseconds
+  Sub-window 2 (ID: 2188893426_sub_1_label_7):
+    True label: 7
+    Samples: 3
+    Final prediction: 7
+    Vote count: 3/3 (100.0%)
+    Prediction distribution: {7: 3}
+    Result: CORRECT
+    Time range: 1751114740800156 - 1751114740863500 microseconds
+Mixed window 2188893426 successfully split into 2 sub-windows
+
+=== Mixed Label Window 2188893486 - Splitting ===
+Original window: 55 samples with labels [0, 7]
+Splitting into 2 sub-windows by true label:
+  Sub-window 1 (ID: 2188893486_sub_0_label_0):
+    True label: 0
+    Samples: 2
+    Final prediction: 0
+    Vote count: 2/2 (100.0%)
+    Prediction distribution: {0: 2}
+    Result: CORRECT
+    Time range: 1751114789556822 - 1751114789586428 microseconds
+  Sub-window 2 (ID: 2188893486_sub_1_label_7):
+    True label: 7
+    Samples: 53
+    Final prediction: 7
+    Vote count: 53/53 (100.0%)
+    Prediction distribution: {7: 53}
+    Result: CORRECT
+    Time range: 1751114788803768 - 1751114789296598 microseconds
+Mixed window 2188893486 successfully split into 2 sub-windows
+
+=== Mixed Label Window 2188893711 - Splitting ===
+Original window: 58 samples with labels [4, 7]
+Splitting into 2 sub-windows by true label:
+  Sub-window 1 (ID: 2188893711_sub_0_label_4):
+    True label: 4
+    Samples: 2
+    Final prediction: 4
+    Vote count: 2/2 (100.0%)
+    Prediction distribution: {4: 2}
+    Result: CORRECT
+    Time range: 1751114968858900 - 1751114968955961 microseconds
+  Sub-window 2 (ID: 2188893711_sub_1_label_7):
+    True label: 7
+    Samples: 56
+    Final prediction: 7
+    Vote count: 56/56 (100.0%)
+    Prediction distribution: {7: 56}
+    Result: CORRECT
+    Time range: 1751114969254360 - 1751114969598478 microseconds
+Mixed window 2188893711 successfully split into 2 sub-windows
+
+=== Mixed Label Window 2188893717 - Splitting ===
+Original window: 79 samples with labels [0, 7]
+Splitting into 2 sub-windows by true label:
+  Sub-window 1 (ID: 2188893717_sub_0_label_0):
+    True label: 0
+    Samples: 46
+    Final prediction: 0
+    Vote count: 46/46 (100.0%)
+    Prediction distribution: {0: 46}
+    Result: CORRECT
+    Time range: 1751114974006239 - 1751114974397972 microseconds
+  Sub-window 2 (ID: 2188893717_sub_1_label_7):
+    True label: 7
+    Samples: 33
+    Final prediction: 7
+    Vote count: 33/33 (100.0%)
+    Prediction distribution: {7: 33}
+    Result: CORRECT
+    Time range: 1751114973648706 - 1751114973876889 microseconds
+Mixed window 2188893717 successfully split into 2 sub-windows
+
+=== Mixed Label Window 2188894460 - Splitting ===
+Original window: 56 samples with labels [0, 5]
+Splitting into 2 sub-windows by true label:
+  Sub-window 1 (ID: 2188894460_sub_0_label_0):
+    True label: 0
+    Samples: 27
+    Final prediction: 0
+    Vote count: 27/27 (100.0%)
+    Prediction distribution: {0: 27}
+    Result: CORRECT
+    Time range: 1751115568001172 - 1751115568358834 microseconds
+  Sub-window 2 (ID: 2188894460_sub_1_label_5):
+    True label: 5
+    Samples: 29
+    Final prediction: 5
+    Vote count: 29/29 (100.0%)
+    Prediction distribution: {5: 29}
+    Result: CORRECT
+    Time range: 1751115568556095 - 1751115568798137 microseconds
+Mixed window 2188894460 successfully split into 2 sub-windows
+
+=== Inference Time Statistics ===
+Total samples: 11278
+Pure inference time: 66.4147 seconds
+Average inference time per sample: 0.005889 seconds
+Inference throughput: 169.81 samples/second
+
+=== Time Window Processing Summary ===
+Total original time windows found: 322
+Mixed label windows (split): 10
+Pure single-label windows: 312
+Total final windows after splitting: 332
+Final window breakdown:
+  - Original single-label windows: 312
+  - Sub-windows from mixed splitting: 20
+Window statistics:
+  - Samples per window: min=1, max=162, avg=34.0
+  - Correct windows: 329/332 (99.1%)
+  - Vote consistency: min=0.429, max=1.000, avg=0.974
+Mixed label time windows processed: 10/322 (3.1%) - split into sub-windows
+Total final windows for analysis: 332
+Prediction completed, elapsed time: 79.18 seconds
+
+=== Time Window Voting Results Analysis ===
+Number of time windows: 332
+Number of individual predictions: 11278
+Individual sample accuracy: 0.9747 (97.47%)
+Time window voting accuracy: 0.9910 (99.10%)
+Accuracy improvement: +0.0162 (+1.62%)
+
+=== Inference Performance Statistics ===
+Total samples: 11278
+Pure inference time: 66.4147 seconds
+Average inference time per sample: 0.005889 seconds
+Inference throughput: 169.81 samples/second
+
+=== Voting Statistics ===
+Predictions per window - Average: 34.0, Min: 1, Max: 162
+Voting consistency - Average: 0.974, Min: 0.429, Max: 1.000
+Mixed label windows: 10/322 (3.1%) - split into sub-windows
+Total analysis windows (including split sub-windows): 332/322 original windows
+
+=== Per-class Performance After Majority Voting ===
+Class                          Windows  Accuracy  
+--------------------------------------------------
+Approach                       66       98.48%
+Pick_and_Place_Bolt            32       100.00%
+Pick_and_Place_Cover           39       100.00%
+Pick_and_Place_Part1_Small     23       95.65%
+Pick_and_Place_Part2_Big       28       100.00%
+Pick_and_Place_Screwdriver     47       100.00%
+Screw                          45       97.78%
+Transition                     52       100.00%
+
+=== Individual Sample Per-class Performance ===
+Class                          Samples  Accuracy  
+--------------------------------------------------
+Approach                       2677     97.83%
+Pick_and_Place_Bolt            937      95.20%
+Pick_and_Place_Cover           1731     97.52%
+Pick_and_Place_Part1_Small     708      96.47%
+Pick_and_Place_Part2_Big       1184     98.48%
+Pick_and_Place_Screwdriver     1877     97.18%
+Screw                          493      98.17%
+Transition                     1671     97.97%
+
+=== Window-level Confusion Matrix ===
+65,0,0,0,0,0,0,1
+0,32,0,0,0,0,0,0
+0,0,39,0,0,0,0,0
+0,0,0,22,1,0,0,0
+0,0,0,0,28,0,0,0
+0,0,0,0,0,47,0,0
+0,0,0,0,0,1,44,0
+0,0,0,0,0,0,0,52
+
+=== Window-level Normalized Confusion Matrix ===
+0.98,0.00,0.00,0.00,0.00,0.00,0.00,0.02
+0.00,1.00,0.00,0.00,0.00,0.00,0.00,0.00
+0.00,0.00,1.00,0.00,0.00,0.00,0.00,0.00
+0.00,0.00,0.00,0.96,0.04,0.00,0.00,0.00
+0.00,0.00,0.00,0.00,1.00,0.00,0.00,0.00
+0.00,0.00,0.00,0.00,0.00,1.00,0.00,0.00
+0.00,0.00,0.00,0.00,0.00,0.02,0.98,0.00
+0.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00
+
+=== Individual Sample Confusion Matrix ===
+2619,2,7,6,8,6,0,29
+0,892,0,24,0,21,0,0
+0,3,1688,1,39,0,0,0
+5,4,0,683,5,11,0,0
+0,2,4,12,1166,0,0,0
+17,21,3,4,0,1824,4,4
+0,0,0,0,0,9,484,0
+28,0,0,5,0,1,0,1637
+
+=== Individual Sample Normalized Confusion Matrix ===
+0.98,0.00,0.00,0.00,0.00,0.00,0.00,0.01
+0.00,0.95,0.00,0.03,0.00,0.02,0.00,0.00
+0.00,0.00,0.98,0.00,0.02,0.00,0.00,0.00
+0.01,0.01,0.00,0.96,0.01,0.02,0.00,0.00
+0.00,0.00,0.00,0.01,0.98,0.00,0.00,0.00
+0.01,0.01,0.00,0.00,0.00,0.97,0.00,0.00
+0.00,0.00,0.00,0.00,0.00,0.02,0.98,0.00
+0.02,0.00,0.00,0.00,0.00,0.00,0.00,0.98
+
+Confusion matrix image paths:
+Window-level: results/test_figs/pointnet2_event_0628_8_ecount_11_window_confusion_matrix_time_window_sec_0.8s_20250911_185254.png
+Window-level normalized: results/test_figs/pointnet2_event_0628_8_ecount_11_window_norm_confusion_matrix_0.8s_20250911_185254.png
+Individual sample: results/test_figs/pointnet2_event_0628_8_ecount_11_individual_confusion_matrix_0.8s_20250911_185254.png
+Individual sample normalized: results/test_figs/pointnet2_event_0628_8_ecount_11_individual_norm_confusion_matrix_0.8s_20250911_185254.png
+
+=== Key Metrics ===
+Number of time windows: 332
+Number of individual predictions: 11278
+Individual sample accuracy: 97.47%
+Time window voting accuracy: 99.10%
+Accuracy improvement: +1.62%
+Prediction time: 79.18 seconds
+Pure inference time: 66.4147 seconds
+Average inference time per sample: 0.005889 seconds
+Inference throughput: 169.81 samples/second
+
+End time: 2025-09-11 18:54:15
+
+=== Results Summary ===
+Time window voting accuracy: 99.10%
+Individual sample accuracy: 97.47%
+Accuracy improvement: +1.62%
+Pure inference time: 66.4147 seconds
+Average inference time per sample: 0.005889 seconds
+Inference throughput: 169.81 samples/second
+Log file: results/test_logs/voting_0.8s_20250911_185254.txt

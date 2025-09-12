@@ -22,9 +22,9 @@ from models.backbones.resnet import ResNet_model
 from models.backbones.resnet_pretrained import PretrainedResNet_model
 
 
-from models.backbones.pointnet2_v1 import PointNet2Classifier
+# from models.backbones.pointnet2_v1 import PointNet2Classifier
 # from models.backbones.pointnet2_v2 import PointNet2Classifier
-# from models.backbones.pointnet2_v3 import PointNet2Classifier
+from models.backbones.pointnet2_v3 import PointNet2Classifier
 from models.backbones.pointnet2msg_v1 import PointNet2MSGClassifier
 # from models.backbones.pointnet2msg_v2 import PointNet2MSGClassifier
 # from models.losses.cross_entropy_loss import CrossEntropyLoss
@@ -42,20 +42,20 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
     if model_type in ['pointnet2', 'pointnet2msg']:
         print(f"Using {model_type} model, loading event datasets...")
         pnet2_data_dir = "preprocessing_data"
-        pnet2_train_pkl = "train_data_0628_8_ecount_3.pkl"
+        pnet2_train_pkl = "train_data_0628_8_ecount_4.pkl"
         pnet2_train_path = os.path.join(pnet2_data_dir, pnet2_train_pkl)
         print(f"Start loading training dataset from {pnet2_train_path}")
         with open(pnet2_train_path, 'rb') as f:
             train_ds = pickle.load(f)
         print(f"Loaded training dataset with {len(train_ds)} samples")
         
-        pnet2_val_path = os.path.join(pnet2_data_dir, "val_data_0628_8_ecount_3.pkl")
+        pnet2_val_path = os.path.join(pnet2_data_dir, "val_data_0628_8_ecount_4.pkl")
         print(f"Start loading validation dataset from {pnet2_val_path}")
         with open(pnet2_val_path, 'rb') as f:
             val_ds = pickle.load(f)
         print(f"Loaded validation dataset with {len(val_ds)} samples")
         
-        pnet2_test_path = os.path.join(pnet2_data_dir, "test_data_0628_8_ecount_3.pkl")
+        pnet2_test_path = os.path.join(pnet2_data_dir, "test_data_0628_8_ecount_4.pkl")
         print(f"Start loading test dataset from {pnet2_test_path}")
         with open(pnet2_test_path, 'rb') as f:
             test_ds = pickle.load(f)
@@ -301,7 +301,9 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
         train_start_time = time.time()
         model.train()
         total_loss = 0.0
-        for imgs, labels in tqdm.tqdm(train_loader):
+        # for imgs, labels in tqdm.tqdm(train_loader):
+        for batch_data in tqdm.tqdm(train_loader):
+            imgs, labels = batch_data[:2]
             imgs = imgs.float().to(device)
             labels = labels.to(device)
             # t0 = time.time()
@@ -334,7 +336,9 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
         model.eval()
         val_loss = correct = total = 0.0
         with torch.no_grad():
-            for imgs, labels in tqdm.tqdm(val_loader):
+            # for imgs, labels in tqdm.tqdm(val_loader):
+            for batch_data in tqdm.tqdm(val_loader):
+                imgs, labels = batch_data[:2]
                 imgs = imgs.float().to(device)
                 labels = labels.to(device)
                 logits = model(imgs)
@@ -390,7 +394,9 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
     all_labels = []
 
     with torch.no_grad():
-        for imgs, labels in tqdm.tqdm(test_loader):
+        # for imgs, labels in tqdm.tqdm(test_loader):
+        for batch_data in tqdm.tqdm(test_loader):
+            imgs, labels = batch_data[:2]
             imgs = imgs.float().to(device)
             labels = labels.to(device)
             logits = model(imgs)

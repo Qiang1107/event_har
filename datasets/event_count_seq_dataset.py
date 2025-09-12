@@ -420,7 +420,7 @@ class ECountSeqDataset(Dataset):
                         print(f"Warning 5: 文件 {file_path} 中xy中心位置没有有效的事件点,跳过处理")
                         continue
                     events = events[valid_mask]
-                    print(f"文件 {file_path} 经过空间裁剪后剩余事件数: {len(events)}")
+                    # print(f"文件 {file_path} 经过空间裁剪后剩余事件数: {len(events)}")
 
                 # 解析事件数据
                 t, x, y, p = events[:, 0], events[:, 1], events[:, 2], events[:, 3]
@@ -432,16 +432,17 @@ class ECountSeqDataset(Dataset):
                 num_slices = 0                
                 for start in range(0, len(events) - self.window_size_event_count, step_size):
                     end = start + self.window_size_event_count
-                    slice_events = np.stack((t[start:end], x[start:end], y[start:end], p[start:end]), axis=1)
+                    slice_events = np.stack((x[start:end], y[start:end], t[start:end], p[start:end]), axis=1)
                     num_slices += 1
 
-                    # 计算窗口持续时间
-                    window_duration = events[end-1, 0] - events[start, 0]
+                    # 计算窗口持续时间和时间戳信息
+                    start_timestamp = events[start, 0]  # 原始时间戳（微秒）
+                    end_timestamp = events[end-1, 0]    # 原始时间戳（微秒）
+                    center_timestamp = (start_timestamp + end_timestamp) / 2
+                    window_duration = end_timestamp - start_timestamp
                     window_durations.append(window_duration)
-                    # print(f"Window duration: {window_duration:.2f} µs")
-
-                    # self.samples.append((file_path, slice_events, class_idx))
-                    self.samples.append((slice_events, class_idx))
+                    self.samples.append((slice_events, class_idx, start_timestamp, end_timestamp, 
+                                         center_timestamp, file_path, window_duration, class_name))
 
                 total_sample_count += num_slices
                 # print(f"文件: {file}，原始事件数: {len(events)}，生成样本数: {num_slices}")
@@ -460,9 +461,8 @@ class ECountSeqDataset(Dataset):
     
     def __getitem__(self, idx):
         """获取单个点云样本"""
-        # file_path, events, label = self.samples[idx]
-        events, label = self.samples[idx]
-        return events, label
+        events, label, start_ts, end_ts, center_ts, file_path, window_duration, class_name = self.samples[idx]
+        return events, label, start_ts, end_ts, center_ts, file_path, window_duration, class_name
 
 
 if __name__ == '__main__':
@@ -491,7 +491,7 @@ if __name__ == '__main__':
     # 保存处理后的数据集到文件
     save_dir = "preprocessing_data"
     os.makedirs(save_dir, exist_ok=True)
-    save_path = os.path.join(save_dir, "test_data_0628_8_ecount_3.pkl") 
+    save_path = os.path.join(save_dir, "test_data_0628_8_ecount_4.pkl") 
     with open(save_path, 'wb') as f:
         print(f"正在保存数据集到 {save_path} ...")
         pickle.dump(data_ds, f)
@@ -505,13 +505,17 @@ if __name__ == '__main__':
         
         # 随机检查一个样本 shape为 [N, 4]， N为点云点数
         sample_idx = random.randint(0, len(loaded_ds)-1)
-        sample_data, sample_label = loaded_ds[sample_idx]
+        sample_data, sample_label, sample_start_ts, sample_end_ts, sample_center_ts, sample_file_path, sample_window_duration, sample_class_name = loaded_ds[sample_idx]
         print(f"\n随机样本 #{sample_idx}:")
         print(f"  - 形状: {sample_data.shape}")
         print(f"  - 标签: {sample_label}")
-        print(f"  - 点云范围: t[{sample_data[:, 0].min():.2f}, {sample_data[:, 0].max():.2f}], "
-              f"x[{sample_data[:, 1].min():.2f}, {sample_data[:, 1].max():.2f}], "
-              f"y[{sample_data[:, 2].min():.2f}, {sample_data[:, 2].max():.2f}]")
+        print(f"  - 点云范围: x[{sample_data[:, 0].min():.2f}, {sample_data[:, 0].max():.2f}], "
+              f"y[{sample_data[:, 1].min():.2f}, {sample_data[:, 1].max():.2f}], "
+              f"t[{sample_data[:, 2].min():.2f}, {sample_data[:, 2].max():.2f}]")
+        print(f"  - 时间戳: start {sample_start_ts}, end {sample_end_ts}, center {sample_center_ts}")
+        print(f"  - 窗口持续时间: {sample_window_duration} µs")
+        print(f"  - 文件路径: {sample_file_path}")
+        print(f"  - 类别名称: {sample_class_name}")
         
         file_size_mb = os.path.getsize(save_path) / (1024 * 1024)
         print(f"\n数据集文件大小: {file_size_mb:.2f} MB")

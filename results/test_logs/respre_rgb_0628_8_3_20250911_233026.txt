@@ -1,0 +1,44 @@
+ Model loaded from: results/checkpoints/respre_rgb_0628_8_3.pth
+ Model type: resnet_pretrained
+ Window_size: 9
+ Stride: 3
+ ------Pretrained ResNet Model Configuration------
+ Pretrained ResNet Model: {'num_classes': 8, 'model_name': 'resnet50', 'pretrained': True, 'temporal_strategy': 'lstm', 'dropout': 0.5}
+
+-----------------------------------------------------------------------
+Iteration 1:
+Test statistics: 2614 samples in 164 batches
+Pure inference time: 6.0511 seconds
+Average inference time per batch: 0.0369 seconds
+Average inference time per sample: 0.002315 seconds
+Throughput: 431.99 samples/second
+Test Acc: 0.8045 (2103/2614)
+Per-class accuracy:
+Approach: 0.7030 (258/367)
+Pick_and_Place_Bolt: 0.7821 (244/312)
+Pick_and_Place_Cover: 0.8872 (346/390)
+Pick_and_Place_Part1_Small: 0.7143 (130/182)
+Pick_and_Place_Part2_Big: 0.7649 (218/285)
+Pick_and_Place_Screwdriver: 0.8269 (320/387)
+Screw: 0.8402 (410/488)
+Transition: 0.8719 (177/203)
+
+Confusion Matrix:
+258,28,10,8,16,16,0,31
+10,244,14,4,6,0,0,34
+8,0,346,31,5,0,0,0
+29,0,0,130,10,0,0,13
+33,21,2,6,218,0,0,5
+10,10,0,0,0,320,45,2
+0,2,0,0,0,76,410,0
+14,7,1,1,1,2,0,177
+
+Normalized Confusion Matrix:
+0.70,0.08,0.03,0.02,0.04,0.04,0.00,0.08
+0.03,0.78,0.04,0.01,0.02,0.00,0.00,0.11
+0.02,0.00,0.89,0.08,0.01,0.00,0.00,0.00
+0.16,0.00,0.00,0.71,0.05,0.00,0.00,0.07
+0.12,0.07,0.01,0.02,0.76,0.00,0.00,0.02
+0.03,0.03,0.00,0.00,0.00,0.83,0.12,0.01
+0.00,0.00,0.00,0.00,0.00,0.16,0.84,0.00
+0.07,0.03,0.00,0.00,0.00,0.01,0.00,0.87

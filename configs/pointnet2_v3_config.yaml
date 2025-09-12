@@ -1,0 +1,151 @@
+# ===== PointNet2_v4 时序增强模型配置 =====
+# 在原有 har_train_config.yaml 基础上新增的配置项
+
+pointnet2_model:
+  num_classes: 8
+  normal_channel: True  # 事件数据没有法向量，相当于特征向量
+  input_dim: 4  # x, y, t, p
+  
+  # === v4 新增时序增强配置 ===
+  use_temporal_enhancement: true      # 是否启用时序特征增强模块
+  time_feature_dim: 8                 # 时序特征维度 (4, 8, 16, 32)
+  temporal_pooling: true              # 是否使用自适应时序池化
+  attention_mechanism: true           # 是否使用多尺度时序注意力
+  
+  # 时序特征增强详细配置
+  temporal_enhancement:
+    encoder_hidden_dim: 4             # 时间编码器隐藏维度
+    fusion_hidden_multiplier: 2       # 特征融合隐藏层倍数
+    positional_encoding_scale: 10000  # 位置编码缩放因子
+  
+  # 多尺度时序注意力配置
+  temporal_attention:
+    num_heads: 4                      # 注意力头数 (2, 4, 8)
+    temporal_scales: [4, 8, 16]       # 时间窗口尺度列表
+    dropout_rate: 0.1                 # Dropout比率
+    
+  # 自适应时序池化配置
+  adaptive_pooling:
+    consistency_hidden_dim: 2         # 一致性评估器隐藏维度
+    gate_activation: 'sigmoid'        # 门控激活函数 ('sigmoid', 'tanh')
+  
+  # Set Abstraction层配置 (可以针对不同层设置)
+  set_abstraction_layers:
+    sa1:
+      npoint: 512
+      radius: 0.2
+      nsample: 32
+      mlp: [64, 64, 128]
+      use_temporal: true
+    sa2:
+      npoint: 128  
+      radius: 0.4
+      nsample: 64
+      mlp: [128, 128, 256]
+      use_temporal: true
+    sa3:
+      npoint: null  # 全局特征提取
+      radius: null
+      nsample: 1
+      mlp: [256, 512, 1024]
+      use_temporal: true
+
+# ===== 训练相关配置 =====
+training:
+  # 时序损失权重配置
+  temporal_loss:
+    consistency_weight: 0.1           # 时序一致性损失权重 (0.01, 0.1, 0.2)
+    smoothness_weight: 0.05           # 时序平滑性损失权重
+    
+  # 学习率调度 - 针对更复杂模型的调整
+  scheduler:
+    type: 'StepLR'                    # 'StepLR', 'CosineAnnealingLR', 'ReduceLROnPlateau'
+    step_size: 10                     # StepLR参数
+    gamma: 0.7                        # StepLR衰减因子
+    
+  # 早停配置
+  early_stopping:
+    patience: 10                      # 验证损失不改善的最大epoch数
+    min_delta: 0.001                  # 最小改善阈值
+    
+  # 模型检查点配置
+  checkpoint:
+    save_best: true                   # 保存最佳模型
+    save_last: true                   # 保存最后一个epoch模型
+    save_interval: 5                  # 每隔多少epoch保存一次
+
+# ===== 数据增强配置 (针对时序数据) =====
+temporal_augmentation:
+  enabled: false                      # 是否启用时序数据增强
+  
+  # 时间扰动
+  time_jittering:
+    enabled: true
+    noise_std: 0.01                   # 时间噪声标准差
+    
+  # 时间缩放
+  time_scaling:
+    enabled: true
+    scale_range: [0.9, 1.1]           # 时间缩放范围
+    
+  # 事件丢弃 (模拟传感器丢帧)
+  event_dropout:
+    enabled: true
+    dropout_rate: 0.05                # 随机丢弃事件的比例
+
+# ===== 可视化和分析配置 =====
+visualization:
+  # 时序权重可视化
+  temporal_weights:
+    save_plots: true                  # 是否保存时序权重图
+    plot_interval: 5                  # 每隔多少epoch绘制一次
+    num_samples: 3                    # 可视化样本数量
+    
+  # 特征可视化
+  feature_analysis:
+    save_features: false              # 是否保存中间特征
+    tsne_visualization: false         # 是否进行t-SNE可视化
+    
+  # 注意力可视化
+  attention_maps:
+    save_attention: true              # 是否保存注意力图
+    layer_names: ['sa1', 'sa2', 'sa3'] # 要可视化的层
+
+# ===== 模型评估配置 =====
+evaluation:
+  # 详细评估指标
+  metrics:
+    - 'accuracy'
+    - 'precision'
+    - 'recall'
+    - 'f1_score'
+    - 'confusion_matrix'
+    
+  # 时序敏感性分析
+  temporal_analysis:
+    enabled: true
+    window_stride_analysis: true      # 分析不同窗口步长的影响
+    temporal_resolution_analysis: true # 分析时间分辨率的影响
+    
+  # 消融实验配置
+  ablation_study:
+    enabled: false
+    components:
+      - 'temporal_enhancement'
+      - 'temporal_attention' 
+      - 'adaptive_pooling'
+      - 'temporal_loss'
+
+# ===== 实验记录配置 =====
+experiment:
+  name: 'pointnet2_v4_temporal_enhancement'
+  description: 'PointNet2 with temporal feature enhancement for event-based HAR'
+  tags:
+    - 'pointnet2'
+    - 'temporal'
+    - 'event_camera'
+    - 'human_action_recognition'
+  
+  # 版本对比
+  baseline_model: 'pointnet2_v3'      # 对比基线模型
+  expected_improvement: 'Better temporal pattern recognition'

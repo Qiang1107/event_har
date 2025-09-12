@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-简化的时间窗口投票预测系统
+时间窗口投票预测系统 - 混合窗口拆分版本
 - 使用新的数据预处理逻辑 test_data_0628_8_ecount_3_vote.pkl
 - 使用简单多数投票 
 - center_timestamp 或者 start_timestamp 进行时间窗口投票
-- [过滤掉混合标签的时间窗口]
+- [将混合标签的时间窗口按真实标签拆分为多个子窗口]
 
 # 使用不同的时间窗口大小
-python simple_temporal_voting.py --data preprocessing_data/test_data_0628_8_ecount_3_vote.pkl --time_window 0.5
-python simple_temporal_voting.py --data preprocessing_data/test_data_0628_8_ecount_3_vote.pkl --time_window 1.0
-python simple_temporal_voting.py --data preprocessing_data/test_data_0628_8_ecount_3_vote.pkl --time_window 2.0
+python prediction_voting_withoutmix.py --data preprocessing_data/test_data_0628_8_ecount_3_vote.pkl --time_window 0.5
+python prediction_voting_withoutmix.py --data preprocessing_data/test_data_0628_8_ecount_3_vote.pkl --time_window 1.0
+python prediction_voting_withoutmix.py --data preprocessing_data/test_data_0628_8_ecount_3_vote.pkl --time_window 2.0
 """
 
 import os
@@ -32,7 +32,7 @@ from models.backbones.pointnet2msg_v1 import PointNet2MSGClassifier
 from datasets.event_count_seq_dataset_vote import ECountSeqDatasetVote
 
 class SimpleTemporalVoting:
-    """简化的时间窗口投票预测器 - 基于真实时间戳"""
+    """时间窗口投票预测器 - 基于真实时间戳，支持混合窗口拆分"""
     
     def __init__(self, time_window_sec=1.0, verbose_windows=True):
         """
@@ -62,7 +62,7 @@ class SimpleTemporalVoting:
         return time_windows
     
     def majority_vote_in_window(self, window_predictions, log_path):
-        """在单个时间窗口内进行简单多数投票（已预先过滤混合标签窗口）"""
+        """在单个时间窗口内进行简单多数投票（已预先处理混合标签窗口）"""
         if not window_predictions:
             return None, None, 0, 0
         
@@ -75,8 +75,10 @@ class SimpleTemporalVoting:
         final_prediction = vote_counts.most_common(1)[0][0]
         vote_count = vote_counts[final_prediction]
         
-        # 获取窗口的真实标签（现在应该都一致）
-        window_true_label = true_labels[0]  # 所有标签都一致，取第一个即可
+        # 获取窗口的真实标签（现在应该都一致，但为了保险起见，选择出现次数最多的）
+        # window_true_label = true_labels[0]  # 所有标签都一致，取第一个即可
+        true_label_counts = Counter(true_labels)
+        window_true_label = true_label_counts.most_common(1)[0][0]
         
         return final_prediction, window_true_label, len(votes), vote_count
     
@@ -146,98 +148,99 @@ class SimpleTemporalVoting:
         for window_id in tqdm.tqdm(sorted(time_windows.keys()), desc="Time window voting"):
             window_preds = time_windows[window_id]
             
-            # 检查是否有混合标签，如果有则跳过该窗口
+            # 检查是否有混合标签，如果有则按标签拆分窗口
             unique_labels = set([pred['true_label'] for pred in window_preds])
             if len(unique_labels) > 1:
                 mixed_label_windows += 1
                 
-                # 打印混合窗口的详细信息
-                if self.verbose_windows:
-                    print(f"\n=== Mixed Label Window {window_id} Details ===")
-                    print(f"Window ID: {window_id}")
-                    print(f"Number of samples in window: {len(window_preds)}")
-                    print(f"Unique true labels in window: {sorted(unique_labels)}")
-                    print(f"Time range: {min([pred['center_timestamp'] for pred in window_preds]):.0f} - {max([pred['center_timestamp'] for pred in window_preds]):.0f} microseconds")
-                    
-                    # 详细列出每个样本的信息
-                    print(f"Sample details:")
-                    for i, pred in enumerate(window_preds):
-                        print(f"  Sample {i+1:2d}: True={pred['true_label']:2d}, Pred={pred['prediction']:2d}, "
-                              f"Timestamp={pred['center_timestamp']:>15.0f}, Class='{pred['class_name']}'")
-                    
-                    # 统计标签分布
-                    label_counts = Counter([pred['true_label'] for pred in window_preds])
-                    pred_counts = Counter([pred['prediction'] for pred in window_preds])
-                    print(f"True label distribution: {dict(label_counts)}")
-                    print(f"Prediction distribution: {dict(pred_counts)}")
-                else:
-                    print(f"Mixed Label Window {window_id}: {len(window_preds)} samples, labels {sorted(unique_labels)} - SKIPPED")
+                # 按真实标签拆分混合窗口
+                label_groups = defaultdict(list)
+                for pred in window_preds:
+                    label_groups[pred['true_label']].append(pred)
+                
+                print(f"\n=== Mixed Label Window {window_id} - Splitting into {len(unique_labels)} sub-windows ===")
+                print(f"Original window had {len(window_preds)} samples with labels: {sorted(unique_labels)}")
                 
                 # 写入日志文件
                 with open(log_path, 'a') as f:
-                    f.write(f"\n=== Mixed Label Window {window_id} Details ===\n")
-                    f.write(f"Window ID: {window_id}\n")
-                    f.write(f"Number of samples in window: {len(window_preds)}\n")
-                    f.write(f"Unique true labels in window: {sorted(unique_labels)}\n")
-                    f.write(f"Time range: {min([pred['center_timestamp'] for pred in window_preds]):.0f} - {max([pred['center_timestamp'] for pred in window_preds]):.0f} microseconds\n")
-                    f.write(f"Sample details:\n")
-                    for i, pred in enumerate(window_preds):
-                        f.write(f"  Sample {i+1:2d}: True={pred['true_label']:2d}, Pred={pred['prediction']:2d}, "
-                                f"Timestamp={pred['center_timestamp']:>15.0f}, Class='{pred['class_name']}'\n")
-                    f.write(f"True label distribution: {dict(label_counts)}\n")
-                    f.write(f"Prediction distribution: {dict(pred_counts)}\n")
-                    f.write(f"Skipping this mixed label window\n")
+                    f.write(f"\n=== Mixed Label Window {window_id} - Splitting ===\n")
+                    f.write(f"Original window: {len(window_preds)} samples with labels {sorted(unique_labels)}\n")
+                    f.write(f"Splitting into {len(unique_labels)} sub-windows by true label:\n")
                 
-                warning_msg = f"Warning: Time window {window_id} contains mixed labels {unique_labels}, skipping this window"
-                print(warning_msg)
+                # 对每个标签组进行多数投票
+                for sub_idx, (true_label, sub_window_preds) in enumerate(label_groups.items()):
+                    sub_window_id = f"{window_id}_sub_{sub_idx}_label_{true_label}"
+                    
+                    print(f"  Sub-window {sub_idx + 1}: Label {true_label}, {len(sub_window_preds)} samples")
+                    
+                    # 对子窗口进行多数投票
+                    final_prediction, window_true_label, num_predictions, vote_count = self.majority_vote_in_window(sub_window_preds, log_path)
+                    
+                    if final_prediction is not None:
+                        # 统计预测分布
+                        pred_counts = Counter([pred['prediction'] for pred in sub_window_preds])
+                        print(f"    Voting result: True={window_true_label}, Pred={final_prediction}, Votes={vote_count}/{num_predictions}")
+                        print(f"    Prediction distribution: {dict(pred_counts)}")
+                        print(f"    Result: {'CORRECT' if final_prediction == window_true_label else 'INCORRECT'}")
+
+                        # 写入日志
+                        with open(log_path, 'a') as f:
+                            f.write(f"  Sub-window {sub_idx + 1} (ID: {sub_window_id}):\n")
+                            f.write(f"    True label: {window_true_label}\n")
+                            f.write(f"    Samples: {num_predictions}\n")
+                            f.write(f"    Final prediction: {final_prediction}\n")
+                            f.write(f"    Vote count: {vote_count}/{num_predictions} ({vote_count/num_predictions*100:.1f}%)\n")
+                            f.write(f"    Prediction distribution: {dict(pred_counts)}\n")
+                            f.write(f"    Result: {'CORRECT' if final_prediction == window_true_label else 'INCORRECT'}\n")
+                            f.write(f"    Time range: {min([pred['center_timestamp'] for pred in sub_window_preds]):.0f} - {max([pred['center_timestamp'] for pred in sub_window_preds]):.0f} microseconds\n")
+                            if self.verbose_windows:
+                                f.write(f"    Sample details:\n")
+                                for i, pred in enumerate(sub_window_preds):
+                                    f.write(f"      Sample {i+1:2d}: True={pred['true_label']:2d}, Pred={pred['prediction']:2d}, "
+                                            f"Timestamp={pred['center_timestamp']:>15.0f}, Class='{pred['class_name']}'\n")
+                        
+                        # 将子窗口结果添加到最终结果中
+                        window_results.append({
+                            'window_id': sub_window_id,
+                            'original_window_id': window_id,
+                            'sub_window_index': sub_idx,
+                            'final_prediction': final_prediction,
+                            'true_label': window_true_label,
+                            'num_predictions': num_predictions,
+                            'vote_count': vote_count,
+                            'vote_ratio': vote_count / num_predictions,
+                            'is_correct': final_prediction == window_true_label,
+                            'has_mixed_labels': False,  # 子窗口按定义不包含混合标签
+                            'is_split_from_mixed': True,  # 标记这是从混合窗口拆分出来的
+                            'window_start_time': min([pred['center_timestamp'] for pred in sub_window_preds]),
+                            'window_end_time': max([pred['center_timestamp'] for pred in sub_window_preds])
+                        })
+                
+                print(f"Mixed window {window_id} successfully split into {len(unique_labels)} sub-windows")
                 with open(log_path, 'a') as f:
-                    f.write(warning_msg + "\n")
-                continue  # 跳过混合标签窗口
+                    f.write(f"Mixed window {window_id} successfully split into {len(unique_labels)} sub-windows\n")
+                
+                continue  # 继续处理下一个窗口
             
             # 多数投票
-            final_prediction, window_true_label, num_predictions, vote_count = self.majority_vote_in_window(window_preds, log_path)
-            
+            final_prediction, window_true_label, num_predictions, vote_count = self.majority_vote_in_window(window_preds, log_path) 
+
             if final_prediction is not None:
-                # 打印有效窗口的详细信息
-                if self.verbose_windows:
-                    print(f"\n=== Valid Window {window_id} Details ===")
-                    print(f"Window ID: {window_id}")
-                    print(f"Number of samples in window: {num_predictions}")
-                    print(f"True label (consistent): {window_true_label}")
-                    print(f"Final prediction: {final_prediction}")
-                    print(f"Vote count for final prediction: {vote_count}/{num_predictions} ({vote_count/num_predictions*100:.1f}%)")
-                    print(f"Prediction is {'CORRECT' if final_prediction == window_true_label else 'INCORRECT'}")
-                    print(f"Time range: {min([pred['center_timestamp'] for pred in window_preds]):.0f} - {max([pred['center_timestamp'] for pred in window_preds]):.0f} microseconds")
-                    
-                    # 详细列出每个样本的信息
-                    print(f"Sample details:")
-                    for i, pred in enumerate(window_preds):
-                        print(f"  Sample {i+1:2d}: True={pred['true_label']:2d}, Pred={pred['prediction']:2d}, "
-                              f"Timestamp={pred['center_timestamp']:>15.0f}, Class='{pred['class_name']}'")
-                    
-                    # 统计预测分布
+                # 如果窗口预测错误，打印详细的样本信息
+                if final_prediction != window_true_label:
                     pred_counts = Counter([pred['prediction'] for pred in window_preds])
-                    print(f"Prediction distribution: {dict(pred_counts)}")
-                else:
-                    status = "CORRECT" if final_prediction == window_true_label else "INCORRECT"
-                    print(f"Valid Window {window_id}: {num_predictions} samples, True={window_true_label}, Pred={final_prediction}, Votes={vote_count}/{num_predictions} - {status}")
-                
-                # 写入日志文件（始终记录详细信息到日志）
-                with open(log_path, 'a') as f:
-                    f.write(f"\n=== Valid Window {window_id} Details ===\n")
-                    f.write(f"Window ID: {window_id}\n")
-                    f.write(f"Number of samples in window: {num_predictions}\n")
-                    f.write(f"True label (consistent): {window_true_label}\n")
-                    f.write(f"Final prediction: {final_prediction}\n")
-                    f.write(f"Vote count for final prediction: {vote_count}/{num_predictions} ({vote_count/num_predictions*100:.1f}%)\n")
-                    f.write(f"Prediction is {'CORRECT' if final_prediction == window_true_label else 'INCORRECT'}\n")
-                    f.write(f"Time range: {min([pred['center_timestamp'] for pred in window_preds]):.0f} - {max([pred['center_timestamp'] for pred in window_preds]):.0f} microseconds\n")
-                    f.write(f"Sample details:\n")
-                    for i, pred in enumerate(window_preds):
-                        f.write(f"  Sample {i+1:2d}: True={pred['true_label']:2d}, Pred={pred['prediction']:2d}, "
-                                f"Timestamp={pred['center_timestamp']:>15.0f}, Class='{pred['class_name']}'\n")
-                    f.write(f"Prediction distribution: {dict(pred_counts)}\n")
-                
+                    print(f"\n!!! INCORRECT Window {window_id} !!!")
+                    # 写入日志
+                    with open(log_path, 'a') as f:
+                        f.write(f"\n!!! INCORRECT Window {window_id} !!!\n")
+                        f.write(f"True label: {window_true_label}, Final prediction: {final_prediction}\n")
+                        f.write(f"Total samples: {num_predictions}, Vote count: {vote_count}/{num_predictions}\n")
+                        f.write(f"Prediction distribution: {dict(pred_counts)}\n")
+                        if self.verbose_windows:
+                            f.write(f"Sample details:\n")
+                            for i, pred in enumerate(window_preds):
+                                f.write(f"  Sample {i+1:2d}: True={pred['true_label']:2d}, Pred={pred['prediction']:2d}, "
+                                        f"Class='{pred['class_name']}', Timestamp={pred['center_timestamp']:>15.0f}\n")
                 window_results.append({
                     'window_id': window_id,
                     'final_prediction': final_prediction,
@@ -268,17 +271,25 @@ class SimpleTemporalVoting:
         
         # 输出总体窗口处理汇总
         print(f"\n=== Time Window Processing Summary ===")
-        print(f"Total time windows found: {len(time_windows)}")
-        print(f"Mixed label windows (skipped): {mixed_label_windows}")
-        print(f"Valid windows (processed): {len(window_results)}")
+        print(f"Total original time windows found: {len(time_windows)}")
+        print(f"Mixed label windows (split): {mixed_label_windows}")
+        print(f"Pure single-label windows: {len(time_windows) - mixed_label_windows}")
+        print(f"Total final windows after splitting: {len(window_results)}")
         
         if len(window_results) > 0:
+            # 统计窗口类型
+            split_windows = sum([1 for r in window_results if r.get('is_split_from_mixed', False)])
+            original_windows = len(window_results) - split_windows
+            
             # 统计有效窗口的详细信息
             window_sizes = [r['num_predictions'] for r in window_results]
             correct_windows = sum([1 for r in window_results if r['is_correct']])
             vote_ratios = [r['vote_ratio'] for r in window_results]
             
-            print(f"Valid window statistics:")
+            print(f"Final window breakdown:")
+            print(f"  - Original single-label windows: {original_windows}")
+            print(f"  - Sub-windows from mixed splitting: {split_windows}")
+            print(f"Window statistics:")
             print(f"  - Samples per window: min={min(window_sizes)}, max={max(window_sizes)}, avg={np.mean(window_sizes):.1f}")
             print(f"  - Correct windows: {correct_windows}/{len(window_results)} ({correct_windows/len(window_results)*100:.1f}%)")
             print(f"  - Vote consistency: min={min(vote_ratios):.3f}, max={max(vote_ratios):.3f}, avg={np.mean(vote_ratios):.3f}")
@@ -286,23 +297,30 @@ class SimpleTemporalVoting:
         # 写入日志
         with open(log_path, 'a') as f:
             f.write(f"\n=== Time Window Processing Summary ===\n")
-            f.write(f"Total time windows found: {len(time_windows)}\n")
-            f.write(f"Mixed label windows (skipped): {mixed_label_windows}\n")
-            f.write(f"Valid windows (processed): {len(window_results)}\n")
+            f.write(f"Total original time windows found: {len(time_windows)}\n")
+            f.write(f"Mixed label windows (split): {mixed_label_windows}\n")
+            f.write(f"Pure single-label windows: {len(time_windows) - mixed_label_windows}\n")
+            f.write(f"Total final windows after splitting: {len(window_results)}\n")
             
             if len(window_results) > 0:
-                f.write(f"Valid window statistics:\n")
+                split_windows = sum([1 for r in window_results if r.get('is_split_from_mixed', False)])
+                original_windows = len(window_results) - split_windows
+                
+                f.write(f"Final window breakdown:\n")
+                f.write(f"  - Original single-label windows: {original_windows}\n")
+                f.write(f"  - Sub-windows from mixed splitting: {split_windows}\n")
+                f.write(f"Window statistics:\n")
                 f.write(f"  - Samples per window: min={min(window_sizes)}, max={max(window_sizes)}, avg={np.mean(window_sizes):.1f}\n")
                 f.write(f"  - Correct windows: {correct_windows}/{len(window_results)} ({correct_windows/len(window_results)*100:.1f}%)\n")
                 f.write(f"  - Vote consistency: min={min(vote_ratios):.3f}, max={max(vote_ratios):.3f}, avg={np.mean(vote_ratios):.3f}\n")
         
-        mixed_message = f"Mixed label time windows: {mixed_label_windows}/{len(time_windows)} ({100*mixed_label_windows/len(time_windows):.1f}%)"
-        removed_message = f"Valid windows after removing mixed labels: {len(window_results)}/{len(time_windows)}"
+        mixed_message = f"Mixed label time windows processed: {mixed_label_windows}/{len(time_windows)} ({100*mixed_label_windows/len(time_windows):.1f}%) - split into sub-windows"
+        final_message = f"Total final windows for analysis: {len(window_results)}"
         print(mixed_message)
-        print(removed_message)
+        print(final_message)
         with open(log_path, 'a') as f:
             f.write(mixed_message + "\n")
-            f.write(removed_message + "\n")
+            f.write(final_message + "\n")
         
         return window_results, all_predictions, mixed_label_windows, len(time_windows), total_inference_time, num_samples
 
@@ -362,8 +380,8 @@ def analyze_voting_results(window_results, all_predictions, class_names, log_pat
         f.write(voting_stats)
     
     # 检查混合标签情况
-    mixed_info = f"Mixed label windows: {mixed_label_windows}/{total_windows} ({100*mixed_label_windows/total_windows:.1f}%) - removed\n"
-    valid_info = f"Valid analysis windows: {len(window_results)}/{total_windows} ({100*len(window_results)/total_windows:.1f}%)\n"
+    mixed_info = f"Mixed label windows: {mixed_label_windows}/{total_windows} ({100*mixed_label_windows/total_windows:.1f}%) - split into sub-windows\n"
+    valid_info = f"Total analysis windows (including split sub-windows): {len(window_results)}/{total_windows} original windows\n"
     
     print(mixed_info.strip())
     print(valid_info.strip())
@@ -533,6 +551,11 @@ def main(config_path, model_path, vote_data_path, log_path=None, time_window_sec
         f.write(f"Data source: {vote_data_path}\n")
         f.write(f"Config file: {config_path}\n")
         f.write(f"Model file: {model_path}\n")
+        if model_type in ['pointnet2', 'pointnet2msg']:
+            f.write(f"window_size_event_count: {ds['window_size_event_count']}\n")
+            f.write(f"step_size: {ds['step_size']}\n")
+            f.write(f"roi: {ds['roi']}\n")
+            f.write(f"denoise: {ds['denoise']}\n")
         f.write(f"\nStart time: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
     
     print(f"=== Time Window Voting Prediction System ===")
@@ -630,7 +653,7 @@ def main(config_path, model_path, vote_data_path, log_path=None, time_window_sec
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Time Window Voting Prediction System')
-    parser.add_argument('--config', type=str, default='configs/har_test_config.yaml',
+    parser.add_argument('--config', type=str, default='configs/har_train_config.yaml',
                         help='Configuration file path')
     parser.add_argument('--model', type=str, 
                         default='results/checkpoints/pointnet2_event_0628_8_ecount_11.pth',
@@ -642,7 +665,7 @@ if __name__ == '__main__':
                         help='Log file path')
     parser.add_argument('--time_window', type=float, default=1.0,
                         help='Time window size (seconds)')
-    parser.add_argument('--verbose_windows', action='store_true', default=True,
+    parser.add_argument('--verbose_windows', action='store_true', default=False,
                         help='Print detailed information for each window (True or False)')
     
     args = parser.parse_args()

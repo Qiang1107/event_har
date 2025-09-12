@@ -102,8 +102,8 @@ def main(config_path, premodel_path, log_path):
 
     # 创建日志目录和文件
     best_model_filename = os.path.basename(premodel_path).split('.')[0]
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
     if log_path is None:
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
         log_path = os.path.join(cfg['test_log_dir'], f'{best_model_filename}_{timestamp}.txt')
 
     os.makedirs(cfg['test_log_dir'], exist_ok=True)
@@ -132,13 +132,16 @@ def main(config_path, premodel_path, log_path):
             f.write(f" ------Pretrained ResNet Model Configuration------\n")
             f.write(f" Pretrained ResNet Model: {cfg['resnet_pretrained_model']}\n")
         elif model_type in ['pointnet2', 'pointnet2msg']:
-            f.write(f" ------Pointnet2 Model Configuration------\n")
+            f.write(f" ------{model_type} Model Configuration------\n")
             f.write(f" Loaded test data from: {pnet2_test_path}\n")
+            f.write(f" window_size_event_count: {ds['window_size_event_count']}\n")
+            f.write(f" step_size: {ds['step_size']}\n")
+            f.write(f" roi: {ds['roi']}\n")
+            f.write(f" denoise: {ds['denoise']}\n")
             f.write(f" Pointnet2 Model: {cfg['pointnet2_model']}\n")
     
     # 5. 测试评估
     for idx in range(1):
-        idx=38
         print(f"Running iteration {idx+1}/10...")
         model.eval()
         class_correct = {}
@@ -158,7 +161,9 @@ def main(config_path, premodel_path, log_path):
         num_batches = 0
 
         with torch.no_grad():
-            for imgs, labels, _, _, _, _, _, _ in tqdm.tqdm(test_loader):
+            # for imgs, labels, _, _, _, _, _, _ in tqdm.tqdm(test_loader):
+            for batch_data in tqdm.tqdm(test_loader):
+                imgs, labels = batch_data[:2]
                 imgs = imgs.float().to(device)
                 labels = labels.to(device)
                 
@@ -244,7 +249,7 @@ def main(config_path, premodel_path, log_path):
         
         # 保存混淆矩阵图像
         os.makedirs(cfg['test_fig_dir'], exist_ok=True)
-        confusion_matrix_path = os.path.join(cfg['test_fig_dir'], f"{best_model_filename}_confusion_matrix_{idx+1}.png")
+        confusion_matrix_path = os.path.join(cfg['test_fig_dir'], f"{best_model_filename}_{timestamp}_confusion_matrix_{idx+1}.png")
         plt.tight_layout()
         plt.savefig(confusion_matrix_path)
         print(f"Confusion matrix saved to {confusion_matrix_path}")
@@ -260,7 +265,7 @@ def main(config_path, premodel_path, log_path):
         plt.title('Normalized Confusion Matrix')
         
         # 保存归一化混淆矩阵
-        norm_confusion_matrix_path = os.path.join(cfg['test_fig_dir'], f"{best_model_filename}_norm_confusion_matrix_{idx+1}.png")
+        norm_confusion_matrix_path = os.path.join(cfg['test_fig_dir'], f"{best_model_filename}_{timestamp}_norm_confusion_matrix_{idx+1}.png")
         plt.tight_layout()
         plt.savefig(norm_confusion_matrix_path)
         print(f"Normalized confusion matrix saved to {norm_confusion_matrix_path}")
@@ -279,11 +284,11 @@ def main(config_path, premodel_path, log_path):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', type=str, default='configs/har_test_config.yaml',
+    parser.add_argument('--config', type=str, default='configs/har_train_config.yaml',
                         help='Path to your_action_config.yaml')
     parser.add_argument('--model', type=str, default='results/checkpoints/pointnet2_event_0628_8_ecount_11.pth',
                         help='Path to the pre-trained model')
-    parser.add_argument('--log', type=str, default='results/test_logs/testlog_pointnet2_event_0628_8_ecount_11_38.txt',
+    parser.add_argument('--log', type=str, default=None, # results/test_logs/testlog_pointnet2_event_0628_8_ecount_11_38.txt
                         help='Path to the log file')
     args = parser.parse_args()
     

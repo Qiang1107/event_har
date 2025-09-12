@@ -442,7 +442,8 @@ class ECountSeqDatasetVote(Dataset):
                     window_duration = end_timestamp - start_timestamp
                     window_durations.append(window_duration)
                     
-                    self.samples.append((slice_events, class_idx, start_timestamp, end_timestamp, center_timestamp, file_path, window_duration, class_name))
+                    self.samples.append((slice_events, class_idx, start_timestamp, end_timestamp, 
+                                         center_timestamp, file_path, window_duration, class_name))
 
                 total_sample_count += num_slices
                 # print(f"文件: {file}，原始事件数: {len(events)}，生成样本数: {num_slices}")
@@ -461,7 +462,6 @@ class ECountSeqDatasetVote(Dataset):
     
     def __getitem__(self, idx):
         """获取单个点云样本"""
-        # file_path, events, label = self.samples[idx]
         events, label, start_ts, end_ts, center_ts, file_path, window_duration, class_name = self.samples[idx]
         return events, label, start_ts, end_ts, center_ts, file_path, window_duration, class_name
 
