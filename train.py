@@ -64,7 +64,7 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
         train_loader = DataLoader(train_ds, **cfg['train'])
         val_loader = DataLoader(val_ds, **cfg['val'])
         test_loader = DataLoader(test_ds, **cfg['test'])
-        print("DataLoader created for PointNet2 datasets.")
+        print(f"DataLoader created for {model_type} datasets.")
         
     # elif model_type in ['cnn']:
     #     print(f"Using {model_type} model, loading RGB datasets...")
@@ -226,8 +226,8 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
 
     # 4. 创建日志目录和文件
     best_model_filename = os.path.basename(best_model_path).split('.')[0]
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
     if log_path is None:
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
         log_path = os.path.join(cfg['log_dir'], f'trainlog_{best_model_filename}_{timestamp}.txt')
 
     os.makedirs(cfg['log_dir'], exist_ok=True)
@@ -459,7 +459,7 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
     # 保存混淆矩阵图像
     os.makedirs(cfg['fig_dir'], exist_ok=True)
     
-    confusion_matrix_path = os.path.join(cfg['fig_dir'], f"{best_model_filename}_confusion_matrix.png")
+    confusion_matrix_path = os.path.join(cfg['fig_dir'], f"{best_model_filename}_{timestamp}_confusion_matrix.png")
     plt.tight_layout()
     plt.savefig(confusion_matrix_path)
     print(f"Confusion matrix saved to {confusion_matrix_path}")
@@ -475,7 +475,7 @@ def main(config_path, best_model_path, log_path, pretrained_path=None):
     plt.title('Normalized Confusion Matrix')
     
     # 保存归一化混淆矩阵
-    norm_confusion_matrix_path = os.path.join(cfg['fig_dir'], f"{best_model_filename}_norm_confusion_matrix.png")
+    norm_confusion_matrix_path = os.path.join(cfg['fig_dir'], f"{best_model_filename}_{timestamp}_norm_confusion_matrix.png")
     plt.tight_layout()
     plt.savefig(norm_confusion_matrix_path)
     print(f"Normalized confusion matrix saved to {norm_confusion_matrix_path}")
@@ -498,7 +498,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='configs/har_train_config.yaml',
                         help='Path to config file')
-    parser.add_argument('--model', type=str, default='results/checkpoints/pointnet2_event_0628_8_12.pth',
+    parser.add_argument('--model', type=str, default='results/checkpoints/pointnet2_event_0628_8_13.pth',
                         help='Path to save the best model')
     parser.add_argument('--log', type=str, default=None,  # 'results/logs/trainlog_respre_rgb_0628_8_5.txt',
                         help='Path to the log file')

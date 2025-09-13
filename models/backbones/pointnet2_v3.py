@@ -329,7 +329,7 @@ class PointNet2TemporalClassifier(nn.Module):
     """增强版PointNet2分类器，专注于时序特征建模"""
     def __init__(self, cfg: dict):
         super().__init__()
-        pointnet2_cfg = cfg['pointnet2_model']
+        pointnet2_cfg = cfg['pointnet2_v3_model']
         self.input_dim = pointnet2_cfg['input_dim']
         feature_dim = self.input_dim - 3  # 特征维度：4-3=1
         output_num_class = pointnet2_cfg['num_classes']
