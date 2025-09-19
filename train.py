@@ -25,8 +25,9 @@ from models.backbones.resnet_pretrained import PretrainedResNet_model
 # from models.backbones.pointnet2_v1 import PointNet2Classifier
 # from models.backbones.pointnet2_v2 import PointNet2Classifier
 from models.backbones.pointnet2_v3 import PointNet2Classifier
-from models.backbones.pointnet2msg_v1 import PointNet2MSGClassifier
+# from models.backbones.pointnet2msg_v1 import PointNet2MSGClassifier
 # from models.backbones.pointnet2msg_v2 import PointNet2MSGClassifier
+from models.backbones.pointnet2msg_v3 import PointNet2MSGClassifier
 # from models.losses.cross_entropy_loss import CrossEntropyLoss
 from utils.weight_utils import load_vitpose_pretrained
 
@@ -498,7 +499,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='configs/har_train_config.yaml',
                         help='Path to config file')
-    parser.add_argument('--model', type=str, default='results/checkpoints/pointnet2_event_0628_8_13.pth',
+    parser.add_argument('--model', type=str, default='results/checkpoints/pointnet2_event_0628_8_22.pth',
                         help='Path to save the best model')
     parser.add_argument('--log', type=str, default=None,  # 'results/logs/trainlog_respre_rgb_0628_8_5.txt',
                         help='Path to the log file')

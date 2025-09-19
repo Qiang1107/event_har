@@ -190,6 +190,10 @@ def hierarchical_sampling(xyz, npoint):
             region_points = (region_assignments == r).nonzero().squeeze()
             if region_points.numel() == 0:
                 continue
+            
+            # 处理单个点的情况，确保是1D张量
+            if region_points.dim() == 0:
+                region_points = region_points.unsqueeze(0)
                 
             # 确定这个区域要采样的点数量
             region_size = region_points.shape[0]

@@ -1,17 +1,19 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from models.backbones.pointnet2_v1 import farthest_point_sample, hierarchical_sampling
 
 
 class SetAbstractionMSG(nn.Module):
     """Set abstraction layer with multi-scale grouping."""
 
-    def __init__(self, npoint, radii, nsamples, in_channel, mlps):
+    def __init__(self, npoint, radii, nsamples, in_channel, mlps, sampling='random'):
         super().__init__()
         assert len(radii) == len(nsamples) == len(mlps)
         self.npoint = npoint
         self.radii = radii
         self.nsamples = nsamples
+        self.sampling = sampling
 
         self.conv_blocks = nn.ModuleList()
         self.bn_blocks = nn.ModuleList()
@@ -29,8 +31,19 @@ class SetAbstractionMSG(nn.Module):
     def forward(self, xyz, points):
         B, _, N = xyz.shape
         if self.npoint is not None:
-            idx = torch.randperm(N)[:self.npoint]
-            new_xyz = xyz[:, :, idx].contiguous()
+            # idx = torch.randperm(N)[:self.npoint]
+            # new_xyz = xyz[:, :, idx].contiguous()
+            if self.sampling == 'random': # 随机采样，速度快 
+                idx = torch.randperm(N, device=xyz.device)[:self.npoint]
+                idx = idx.unsqueeze(0).expand(B, -1)  # [B, npoint]
+            elif self.sampling == 'hierarchical': # 分层采样
+                idx = hierarchical_sampling(xyz, self.npoint)
+            elif self.sampling == 'fps': # 标准FPS采样慢
+                idx = farthest_point_sample(xyz, self.npoint)
+            else: # 默认随机采样
+                idx = torch.randperm(N, device=xyz.device)[:self.npoint]
+                idx = idx.unsqueeze(0).expand(B, -1)  # [B, npoint]
+            new_xyz = torch.gather(xyz, 2, idx.unsqueeze(1).expand(-1, 3, -1))
         else:
             new_xyz = xyz
             self.npoint = N
@@ -72,7 +85,7 @@ class SetAbstractionMSG(nn.Module):
 
 
 class PointNet2MSGClassifier(nn.Module):
-    """PointNet++ classification network with MSG."""
+    """ PointNet++ classification network with MSG. """
 
     def __init__(self, cfg: dict):
         super().__init__()
@@ -87,6 +100,7 @@ class PointNet2MSGClassifier(nn.Module):
             nsamples=[16, 32, 128],
             in_channel=feature_dim,
             mlps=[[32, 32, 64], [64, 64, 128], [64, 96, 128]],
+            sampling='random'
         )
         self.sa2 = SetAbstractionMSG(
             npoint=128,
@@ -94,6 +108,7 @@ class PointNet2MSGClassifier(nn.Module):
             nsamples=[32, 64, 128],
             in_channel=320,
             mlps=[[64, 64, 128], [128, 128, 256], [128, 128, 256]],
+            sampling='random'
         )
         self.sa3 = SetAbstractionMSG(
             npoint=None,
@@ -101,6 +116,7 @@ class PointNet2MSGClassifier(nn.Module):
             nsamples=[1],
             in_channel=640,
             mlps=[[256, 512, 1024]],
+            sampling='random'
         )
 
         self.fc1 = nn.Linear(1024, 512)

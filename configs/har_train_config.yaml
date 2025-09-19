@@ -79,14 +79,14 @@ dataset:
 # ===== DataLoader 参数 =====
 train:
   # ---------------------------------------
-  batch_size:   32  # 32 for vit, 16 for cnn, 128 for pointnet2 in server # 32 or 16 for pointnet2msg in server
+  batch_size:   16  # 32 for vit, 16 for cnn, 128 for pointnet2 in server # 32 or 16 for pointnet2msg in server
   # ---------------------------------------
   num_workers:  4      # 从0提升到4，并行数据加载
   shuffle:      true
 
 val:
   # ---------------------------------------
-  batch_size:   32
+  batch_size:   16
   # ---------------------------------------
   num_workers:  4    
   shuffle:      false
@@ -169,25 +169,14 @@ pointnet2_v3_model:
   num_classes: 8
   normal_channel: True  # 事件数据没有法向量，相当于特征向量
   input_dim: 4  # x, y, t, p
-  # === v4 新增时序增强配置 ===
+  # 时序特征增强详细配置
   use_temporal_enhancement: true      # 是否启用时序特征增强模块
   time_feature_dim: 8                 # 时序特征维度 (4, 8, 16, 32)
-  temporal_pooling: true              # 是否使用自适应时序池化
-  attention_mechanism: true           # 是否使用多尺度时序注意力
-  # 时序特征增强详细配置
   temporal_enhancement:
-  encoder_hidden_dim: 4             # 时间编码器隐藏维度
-  fusion_hidden_multiplier: 2       # 特征融合隐藏层倍数
-  positional_encoding_scale: 10000  # 位置编码缩放因子
-  # 多尺度时序注意力配置
-  temporal_attention:
-  num_heads: 4                      # 注意力头数 (2, 4, 8)
-  temporal_scales: [4, 8, 16]       # 时间窗口尺度列表
-  dropout_rate: 0.1                 # Dropout比率
-  # 自适应时序池化配置
-  adaptive_pooling:
-  consistency_hidden_dim: 2         # 一致性评估器隐藏维度
-  gate_activation: 'sigmoid'        # 门控激活函数 ('sigmoid', 'tanh')
+    encoder_hidden_dim: 4             # 时间编码器隐藏维度
+    fusion_hidden_multiplier: 2       # 特征融合隐藏层倍数
+    positional_encoding_scale: 10000  # 位置编码缩放因子
+
   
 
 # ===== 优化器 & 训练 =====
@@ -204,5 +193,5 @@ fig_dir: results/figs
 test_log_dir: results/test_logs
 test_fig_dir: results/test_figs
 # ---------------------------------------
-model_type: pointnet2  # options: cnn / vit / pointnet2 / pointnet2msg / resnet / resnet_pretrained
+model_type: pointnet2msg  # options: cnn / vit / pointnet2 / pointnet2msg / resnet / resnet_pretrained
 # ---------------------------------------

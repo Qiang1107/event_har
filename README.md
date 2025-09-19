@@ -15,22 +15,36 @@ python train.py --config path/to/config.yaml \
 ```
 
 # pointnet++网络模型 log 说明
-test_data_0628_8_ecount_1.pkl 32768 4096            对应 trainlog_pointnet2_event_0628_8_ecount_6.txt
+## test_data_0628_8_ecount_1.pkl 32768 4096
+trainlog_pointnet2_event_0628_8_ecount_6.txt 94.63%
 
-test_data_0628_8_ecount_2.pkl 16384 2048            对应 trainlog_pointnet2_event_0628_8_ecount_7.txt
+## test_data_0628_8_ecount_2.pkl 16384 2048
+trainlog_pointnet2_event_0628_8_ecount_7.txt 95.83%
 
-test_data_0628_8_ecount_3.pkl 8192 1024             对应 trainlog_pointnet2_event_0628_8_ecount_8.txt
+## test_data_0628_8_ecount_3.pkl 8192 1024  
+trainlog_pointnet2_event_0628_8_ecount_8.txt 96.47%
+trainlog_pointnet2_event_0628_8_ecount_9.txt 重复8的实验 96.30%
+trainlog_pointnet2_event_0628_8_ecount_10.txt epoch100 p2v1    96.85%
+trainlog_pointnet2_event_0628_8_ecount_11.txt epoch30 p2msgv1  97.41%
 
-trainlog_pointnet2_event_0628_8_ecount_9.txt 重复实验，舍去 
-trainlog_pointnet2_event_0628_8_ecount_10.txt 100 epoch p2
-trainlog_pointnet2_event_0628_8_ecount_11.txt 30 epoch p2msg
+## test_data_0628_8_ecount_3_vote.pkl 8192 1024
+对于每个样本增加了时间戳，用于简单多数投票预测
 
-test_data_0628_8_ecount_3_vote.pkl 8192 1024        对于每个样本增加了时间戳，用于简单多数投票预测
+## test_data_0628_8_ecount_4.pkl 8192 1024
+增加了时间戳。取消了roi。修改了xyt顺序，原先为txy
+trainlog_pointnet2_event_0628_8_14.txt epoch30 p2v1    fpsfps采样 93.24%
+trainlog_pointnet2_event_0628_8_15.txt epoch30 p2v1    ramram采样 94.80%
+trainlog_pointnet2_event_0628_8_16.txt epoch30 p2v1    ramfps采样 95.24%
+trainlog_pointnet2_event_0628_8_13.txt epoch30 p2v3    ramram采样 95.98%
+trainlog_pointnet2_event_0628_8_17.txt epoch30 p2v3    ramfps采样 96.21%
+trainlog_pointnet2_event_0628_8_12.txt epoch30 p2msgv1 ramram采样 96.80% 同19
+trainlog_pointnet2_event_0628_8_18.txt epoch30 p2msgv1 ramfps采样 96.05%
+trainlog_pointnet2_event_0628_8_19.txt epoch30 p2msgv1 ramram采样 96.35% 同12
+trainlog_pointnet2_event_0628_8_20.txt epoch30 p2msgv3 ramfps采样 97.09%
+trainlog_pointnet2_event_0628_8_21.txt epoch30 p2msgv3 ramram采样 97.94%
+trainlog_pointnet2_event_0628_8_22.txt epoch30 p2msgv3 hiefps采样 
+trainlog_pointnet2_event_0628_8_23.txt epoch30 p2msgv3 ramhie采样 
 
-test_data_0628_8_ecount_4.pkl 8192 1024             增加了时间戳。取消了roi。修改了xyt顺序，原先为txy
-使用pointnet2msg_v1 对应 trainlog_pointnet2_event_0628_8_12.txt
-使用pointnet2_v3 对应 trainlog_pointnet2_event_0628_8_13.txt
-使用pointnet2msg_v3 对应 trainlog_pointnet2_event_0628_8_14.txt
 
 
 # resnet网络模型
